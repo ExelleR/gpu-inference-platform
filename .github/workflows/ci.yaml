@@ -1,0 +1,34 @@
+name: ci
+on:
+  push:
+    branches: [main]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.5.7
+          terraform_wrapper: false
+      - uses: azure/setup-helm@v4
+        with:
+          version: v4.2.4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+      - name: Tools
+        run: make tools
+      - name: Verify
+        run: make all
+      - name: tflint
+        uses: terraform-linters/setup-tflint@v4
+      - name: tflint run
+        run: |
+          tflint --init
+          for stage in infra/terraform/bootstrap infra/terraform/gke; do
+            tflint --chdir="$stage" || exit 1
+          done
