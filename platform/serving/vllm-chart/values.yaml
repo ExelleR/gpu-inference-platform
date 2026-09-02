@@ -1,0 +1,38 @@
+nameOverride: ""
+image:
+  repository: vllm/vllm-openai
+  tag: v0.28.0
+  pullPolicy: IfNotPresent
+model:
+  name: Qwen/Qwen3-8B-FP8
+  servedName: qwen3-8b
+replicas: 1
+# Extra `vllm serve` flags. --host, --port and --served-model-name are always set.
+args:
+  - --max-model-len=8192
+  - --gpu-memory-utilization=0.92
+env: []
+# Name of a Secret with key HF_TOKEN. Empty for ungated models.
+hfTokenSecret: ""
+resources:
+  requests:
+    cpu: "2"
+    memory: 9Gi
+    ephemeral-storage: 20Gi
+    nvidia.com/gpu: 1
+  limits:
+    memory: 10Gi
+    nvidia.com/gpu: 1
+shmSize: 1Gi
+hfCacheSize: 20Gi
+nodeSelector:
+  cloud.google.com/gke-accelerator: nvidia-l4
+tolerations:
+  - key: nvidia.com/gpu
+    operator: Exists
+    effect: NoSchedule
+priorityClassName: inference-critical
+probes:
+  startupFailureThreshold: 60
+service:
+  port: 8000
