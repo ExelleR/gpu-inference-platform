@@ -1,0 +1,22 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: gpu-config
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: {{ .Values.repo.url | quote }}
+    targetRevision: {{ .Values.repo.revision | quote }}
+    path: platform/gpu
+    directory:
+      recurse: false
+  destination:
+    server: {{ .Values.destinationServer }}
+    namespace: gpu-system
+  syncPolicy:
+    {{- include "apps.syncPolicy" . | nindent 4 }}

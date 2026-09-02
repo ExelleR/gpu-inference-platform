@@ -1,0 +1,8 @@
+repo:
+  url: ""
+  revision: main
+destinationServer: https://kubernetes.default.svc
+versions:
+  certManager: v1.21.1
+  keda: 2.20.2
+  kserve: v0.20.0

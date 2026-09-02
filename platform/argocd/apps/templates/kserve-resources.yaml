@@ -1,0 +1,33 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kserve-resources
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  sources:
+    - repoURL: ghcr.io/kserve/charts
+      chart: kserve-resources
+      targetRevision: {{ .Values.versions.kserve | quote }}
+      helm:
+        releaseName: kserve-resources
+        valueFiles:
+          - $values/platform/kserve/values.yaml
+    - repoURL: {{ .Values.repo.url | quote }}
+      targetRevision: {{ .Values.repo.revision | quote }}
+      ref: values
+  destination:
+    server: {{ .Values.destinationServer }}
+    namespace: kserve
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+      - Replace=false
