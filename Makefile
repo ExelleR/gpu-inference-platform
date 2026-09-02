@@ -1,9 +1,9 @@
 SHELL := /bin/bash
 .DEFAULT_GOAL := all
 
-TOOLS_DIR      := $(CURDIR)/.tools/bin
-SCHEMAS_DIR    := $(CURDIR)/.tools/schemas
-BUILD_DIR      := $(CURDIR)/build
+TOOLS_DIR      := .tools/bin
+SCHEMAS_DIR    := .tools/schemas
+BUILD_DIR      := build
 KUBECONFORM_VERSION := 0.8.0
 K8S_SCHEMA_VERSION  := 1.35.0
 UNAME_S := $(shell uname -s | tr '[:upper:]' '[:lower:]')
@@ -13,7 +13,7 @@ ifeq ($(UNAME_M),x86_64)
 else
   ARCH := arm64
 endif
-export PATH := $(TOOLS_DIR):$(PATH)
+export PATH := $(CURDIR)/$(TOOLS_DIR):$(PATH)
 
 TF_STAGES := infra/terraform/bootstrap infra/terraform/gke
 CHARTS    := platform/argocd/bootstrap-chart platform/argocd/apps platform/serving/vllm-chart
@@ -49,19 +49,19 @@ tf-validate:
 
 .PHONY: helm-lint
 helm-lint:
-	mkdir -p $(BUILD_DIR)/charts
+	mkdir -p "$(BUILD_DIR)/charts"
 	@for chart in $(CHARTS); do \
 	  echo "== $$chart"; \
 	  helm lint $$chart || exit 1; \
 	  helm template test $$chart --set repo.url=https://example.invalid/repo.git \
-	    > $(BUILD_DIR)/charts/$$(basename $$chart).yaml || exit 1; \
+	    > "$(BUILD_DIR)/charts/$$(basename $$chart).yaml" || exit 1; \
 	done
 	helm template baseline platform/serving/vllm-chart -f platform/serving/vllm-chart/values-baseline-l4.yaml \
-	  > $(BUILD_DIR)/charts/vllm-chart-baseline.yaml
+	  > "$(BUILD_DIR)/charts/vllm-chart-baseline.yaml"
 
 .PHONY: kubeconform
 kubeconform: helm-lint
-	kubeconform $(KUBECONFORM_ARGS) $(STATIC_MANIFEST_DIRS) $(BUILD_DIR)/charts
+	kubeconform $(KUBECONFORM_ARGS) $(STATIC_MANIFEST_DIRS) "$(BUILD_DIR)/charts"
 
 .PHONY: test
 test:
@@ -69,20 +69,20 @@ test:
 
 .PHONY: render-check
 render-check:
-	rm -rf $(BUILD_DIR)/render && mkdir -p $(BUILD_DIR)/render
+	rm -rf "$(BUILD_DIR)/render" && mkdir -p "$(BUILD_DIR)/render"
 	uv run --project bench gpubench validate bench/experiments/*.yaml
-	uv run --project bench gpubench render bench/experiments/*.yaml -o $(BUILD_DIR)/render
-	kubeconform $(KUBECONFORM_ARGS) $(BUILD_DIR)/render
+	uv run --project bench gpubench render bench/experiments/*.yaml -o "$(BUILD_DIR)/render"
+	kubeconform $(KUBECONFORM_ARGS) "$(BUILD_DIR)/render"
 
 .PHONY: schemas
 schemas:
-	mkdir -p $(SCHEMAS_DIR)
+	mkdir -p "$(SCHEMAS_DIR)"
 	helm show crds oci://ghcr.io/kserve/charts/kserve-crd --version v0.20.0 \
-	  | uv run --project bench python scripts/openapi2jsonschema.py $(SCHEMAS_DIR)
+	  | uv run --project bench python scripts/openapi2jsonschema.py "$(SCHEMAS_DIR)"
 	curl -fsSL https://raw.githubusercontent.com/GoogleCloudPlatform/prometheus-engine/main/manifests/setup.yaml \
-	  | uv run --project bench python scripts/openapi2jsonschema.py $(SCHEMAS_DIR)
+	  | uv run --project bench python scripts/openapi2jsonschema.py "$(SCHEMAS_DIR)"
 	helm show crds keda --repo https://kedacore.github.io/charts --version 2.20.2 \
-	  | uv run --project bench python scripts/openapi2jsonschema.py $(SCHEMAS_DIR)
+	  | uv run --project bench python scripts/openapi2jsonschema.py "$(SCHEMAS_DIR)"
 
 .PHONY: all
 all: lint tf-validate helm-lint kubeconform test render-check
