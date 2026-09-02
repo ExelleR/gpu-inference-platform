@@ -1,0 +1,5 @@
+apiVersion: v2
+name: argocd-bootstrap
+description: Root Argo CD Application for gpu-inference-platform
+type: application
+version: 0.1.0

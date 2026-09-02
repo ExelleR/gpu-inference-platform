@@ -1,0 +1,28 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: platform-root
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: {{ required "repo.url is required" .Values.repo.url | quote }}
+    targetRevision: {{ .Values.repo.revision | quote }}
+    path: {{ .Values.repo.path | quote }}
+    helm:
+      parameters:
+        - name: repo.url
+          value: {{ .Values.repo.url | quote }}
+        - name: repo.revision
+          value: {{ .Values.repo.revision | quote }}
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=true
