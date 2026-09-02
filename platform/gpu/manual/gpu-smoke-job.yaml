@@ -1,0 +1,27 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: gpu-smoke
+  namespace: gpu-system
+spec:
+  backoffLimit: 0
+  ttlSecondsAfterFinished: 3600
+  template:
+    spec:
+      restartPolicy: Never
+      priorityClassName: bench-batch
+      nodeSelector:
+        cloud.google.com/gke-accelerator: nvidia-l4
+      tolerations:
+        - key: nvidia.com/gpu
+          operator: Exists
+          effect: NoSchedule
+      containers:
+        - name: nvidia-smi
+          image: nvidia/cuda:12.8.1-base-ubuntu24.04
+          command: ["/bin/sh", "-c"]
+          args:
+            - /usr/local/nvidia/bin/nvidia-smi && /usr/local/nvidia/bin/nvidia-smi --query-gpu=name,driver_version,memory.total --format=csv
+          resources:
+            limits:
+              nvidia.com/gpu: 1
