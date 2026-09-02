@@ -1,0 +1,5 @@
+project_id   = "gpu-inf-example-2026"
+git_repo_url = "https://github.com/example/gpu-inference-platform.git"
+authorized_networks = [
+  { cidr = "203.0.113.10/32", name = "laptop" },
+]
