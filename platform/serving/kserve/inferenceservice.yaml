@@ -1,0 +1,34 @@
+apiVersion: serving.kserve.io/v1beta1
+kind: InferenceService
+metadata:
+  name: qwen3-8b
+  namespace: inference
+  annotations:
+    serving.kserve.io/deploymentMode: Standard
+spec:
+  predictor:
+    minReplicas: 1
+    maxReplicas: 1
+    nodeSelector:
+      cloud.google.com/gke-accelerator: nvidia-l4
+    tolerations:
+      - key: nvidia.com/gpu
+        operator: Exists
+        effect: NoSchedule
+    model:
+      modelFormat:
+        name: huggingface
+      storageUri: hf://Qwen/Qwen3-8B-FP8
+      args:
+        - --model_name=qwen3-8b
+        - --max-model-len=8192
+        - --gpu-memory-utilization=0.92
+      resources:
+        requests:
+          cpu: "2"
+          memory: 9Gi
+          ephemeral-storage: 20Gi
+          nvidia.com/gpu: "1"
+        limits:
+          memory: 10Gi
+          nvidia.com/gpu: "1"
