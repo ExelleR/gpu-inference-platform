@@ -1,0 +1,30 @@
+# Whole-VM hourly prices used for cost per token. Update `as_of` when you refresh.
+# Source snapshot: gcloud-compute.com, generated 2026-08-30 from the Cloud Billing catalog.
+- key: l4-spot
+  gpu: nvidia-l4
+  machine_type: g2-standard-4
+  region: us-central1
+  usd_per_hour: 0.424
+  source: https://gcloud-compute.com/g2-standard-4.html
+  as_of: 2026-08-30
+- key: l4-ondemand
+  gpu: nvidia-l4
+  machine_type: g2-standard-4
+  region: us-central1
+  usd_per_hour: 0.7068
+  source: https://gcloud-compute.com/g2-standard-4.html
+  as_of: 2026-08-30
+- key: a100-40gb-spot
+  gpu: nvidia-tesla-a100
+  machine_type: a2-highgpu-1g
+  region: us-central1
+  usd_per_hour: 2.1208
+  source: https://gcloud-compute.com/a2-highgpu-1g.html
+  as_of: 2026-08-30
+- key: a100-40gb-ondemand
+  gpu: nvidia-tesla-a100
+  machine_type: a2-highgpu-1g
+  region: us-central1
+  usd_per_hour: 3.6734
+  source: https://gcloud-compute.com/a2-highgpu-1g.html
+  as_of: 2026-08-30
