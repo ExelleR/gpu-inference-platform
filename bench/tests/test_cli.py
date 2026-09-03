@@ -43,6 +43,19 @@ def test_run_applies_and_waits(tmp_path: Path) -> None:
     kube.wait_job.assert_called_once_with("bench-smoke-v", "bench", timeout_s=60)
 
 
+def test_validate_reports_missing_file_and_bad_yaml(tmp_path: Path) -> None:
+    good = tmp_path / "good.yaml"
+    good.write_text(ENGINE_YAML)
+    bad_yaml = tmp_path / "bad.yaml"
+    bad_yaml.write_text("name: [unclosed\nkind: engine\n")
+    missing = tmp_path / "missing.yaml"
+    result = runner.invoke(app, ["validate", str(good), str(bad_yaml), str(missing)])
+    assert result.exit_code == 1
+    assert f"ok   {good}" in result.output
+    assert f"FAIL {bad_yaml}" in result.output
+    assert f"FAIL {missing}" in result.output
+
+
 def test_report_writes_summary(tmp_path: Path, fixtures_dir: Path) -> None:
     raw = tmp_path / "raw"
     raw.mkdir()

@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import typer
+import yaml
 from pydantic import ValidationError
 
 from gpubench.collect import collect as collect_results
@@ -25,7 +26,7 @@ def validate(paths: list[Path]) -> None:
         try:
             exp = load_experiment(path)
             typer.echo(f"ok   {path} ({exp.kind}, {len(exp.loads)} load levels)")
-        except (ValidationError, ValueError) as exc:
+        except (ValidationError, ValueError, OSError, yaml.YAMLError) as exc:
             failed = True
             typer.echo(f"FAIL {path}: {exc}")
     raise typer.Exit(code=1 if failed else 0)
