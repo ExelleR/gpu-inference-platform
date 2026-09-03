@@ -32,6 +32,12 @@ def main(out_dir: Path) -> int:
                 json.dumps(schema, indent=2)
             )
             written += 1
+    if written == 0:
+        print(
+            f"error: wrote 0 schemas to {out_dir} (empty or non-CRD input)",
+            file=sys.stderr,
+        )
+        return 1
     print(f"wrote {written} schema(s) to {out_dir}", file=sys.stderr)
     return 0
 

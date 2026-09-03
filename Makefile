@@ -1,4 +1,5 @@
 SHELL := /bin/bash
+.SHELLFLAGS := -eu -o pipefail -c
 .DEFAULT_GOAL := all
 
 TOOLS_DIR      := .tools/bin
