@@ -73,8 +73,8 @@ def collect(
     image_ids = [image for name in job_names(exp) for image in kube.job_image_ids(name, NAMESPACE)]
     nodes = kube.node_labels(f"gpu={exp.accelerator}")
     kube.apply([reader_pod_manifest()])
-    kube.wait_pod_ready(READER_POD, NAMESPACE, timeout_s=300)
     try:
+        kube.wait_pod_ready(READER_POD, NAMESPACE, timeout_s=300)
         kube.cp_from(NAMESPACE, READER_POD, f"/results/{exp.name}", out_dir / "raw")
     finally:
         kube.delete("pod", READER_POD, NAMESPACE)

@@ -39,3 +39,16 @@ def test_job_image_ids_parses_json() -> None:
         run.return_value.stdout = payload
         image_id = "docker.io/vllm/vllm-openai@sha256:abc"
         assert kube.job_image_ids("bench-x", "bench") == [image_id]
+
+
+def test_job_image_ids_skips_containers_without_image_id() -> None:
+    kube = Kubectl()
+    payload = (
+        '{"items":['
+        '{"status":{"containerStatuses":[{"imageID":"docker.io/x@sha256:abc"}]}},'
+        '{"status":{"containerStatuses":[{"name":"container"}]}}'
+        "]}"
+    )
+    with patch("gpubench.k8s.subprocess.run") as run:
+        run.return_value.stdout = payload
+        assert kube.job_image_ids("bench-x", "bench") == ["docker.io/x@sha256:abc"]

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import subprocess
+from pathlib import Path
 
 import yaml
 
@@ -47,16 +48,17 @@ class Kubectl:
     def job_image_ids(self, name: str, namespace: str) -> list[str]:
         out = self.run(["-n", namespace, "get", "pods", "-l", f"job-name={name}", "-o", "json"])
         return [
-            status["imageID"]
+            image_id
             for item in json.loads(out).get("items", [])
             for status in item.get("status", {}).get("containerStatuses", [])
+            if (image_id := status.get("imageID", ""))
         ]
 
     def node_labels(self, selector: str) -> list[dict]:
         out = self.run(["get", "nodes", "-l", selector, "-o", "json"])
         return json.loads(out).get("items", [])
 
-    def cp_from(self, namespace: str, pod: str, src: str, dst) -> None:
+    def cp_from(self, namespace: str, pod: str, src: str, dst: str | Path) -> None:
         self.run(["cp", f"{namespace}/{pod}:{src}", str(dst)])
 
     def delete(self, kind: str, name: str, namespace: str) -> None:

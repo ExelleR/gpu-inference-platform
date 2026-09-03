@@ -1,6 +1,8 @@
 from pathlib import Path
 from unittest.mock import MagicMock
 
+import pytest
+
 from gpubench.collect import build_manifest, collect, reader_pod_manifest
 from gpubench.config import Experiment
 from gpubench.cost import load_prices
@@ -56,3 +58,14 @@ def test_collect_copies_results_and_writes_manifest(tmp_path: Path) -> None:
     )
     kube.delete.assert_called_once_with("pod", "bench-reader", "bench")
     assert (out / "manifest.json").exists()
+
+
+def test_collect_deletes_reader_pod_when_wait_fails(tmp_path: Path) -> None:
+    kube = MagicMock()
+    kube.job_image_ids.return_value = ["img@sha256:1"]
+    kube.node_labels.return_value = []
+    kube.wait_pod_ready.side_effect = RuntimeError("not ready")
+    with pytest.raises(RuntimeError):
+        collect(EXP, tmp_path / "out", PRICES, kube, git_sha="abc")
+    kube.delete.assert_called_once_with("pod", "bench-reader", "bench")
+    assert not (tmp_path / "out" / "manifest.json").exists()
