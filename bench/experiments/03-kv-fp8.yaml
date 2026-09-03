@@ -1,0 +1,15 @@
+# Does an FP8 KV cache change throughput or latency versus vLLM's automatic KV cache dtype?
+name: kv-fp8
+kind: engine
+gpu_pool: l4-spot
+accelerator: nvidia-l4
+variants:
+  - name: kv-auto
+    model: Qwen/Qwen3-8B-FP8
+    server_args: ["--max-model-len", "8192", "--gpu-memory-utilization", "0.92"]
+  - name: kv-fp8
+    model: Qwen/Qwen3-8B-FP8
+    server_args: ["--max-model-len", "8192", "--gpu-memory-utilization", "0.92", "--kv-cache-dtype", "fp8"]
+loads:
+  - {max_concurrency: 16, num_prompts: 200}
+  - {max_concurrency: 64, num_prompts: 400}

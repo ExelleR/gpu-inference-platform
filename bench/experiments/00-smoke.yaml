@@ -1,0 +1,13 @@
+# Does the pipeline work end to end? Tiny model, one load level, one run.
+name: smoke
+kind: engine
+gpu_pool: l4-spot
+accelerator: nvidia-l4
+variants:
+  - name: qwen3-0-6b
+    model: Qwen/Qwen3-0.6B
+    served_name: qwen3-0-6b
+    server_args: ["--max-model-len", "4096"]
+loads:
+  - {max_concurrency: 4, num_prompts: 20}
+num_runs: 1

@@ -1,0 +1,16 @@
+# Does the L4 quantization story hold on A100: how do FP8 and bf16 compare on a spot A100?
+name: a100-vs-l4
+kind: engine
+gpu_pool: a100-40gb-spot
+accelerator: nvidia-tesla-a100
+variants:
+  # FP8 checkpoint runs as W8A16 via Marlin on A100 (no native FP8 tensor cores on Ampere).
+  - name: fp8
+    model: Qwen/Qwen3-8B-FP8
+    server_args: ["--max-model-len", "8192", "--gpu-memory-utilization", "0.92"]
+  - name: bf16
+    model: Qwen/Qwen3-8B
+    server_args: ["--max-model-len", "8192", "--gpu-memory-utilization", "0.92"]
+loads:
+  - {max_concurrency: 16, num_prompts: 200}
+  - {max_concurrency: 64, num_prompts: 400}

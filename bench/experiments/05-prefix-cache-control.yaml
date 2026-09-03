@@ -1,0 +1,16 @@
+# Does vLLM's automatic prefix caching improve throughput and latency versus disabling it?
+name: prefix-cache-control
+kind: engine
+gpu_pool: l4-spot
+accelerator: nvidia-l4
+variants:
+  - name: prefix-on
+    model: Qwen/Qwen3-8B-FP8
+    server_args: ["--max-model-len", "8192", "--gpu-memory-utilization", "0.92"]
+  - name: prefix-off
+    model: Qwen/Qwen3-8B-FP8
+    server_args: ["--max-model-len", "8192", "--gpu-memory-utilization", "0.92", "--no-enable-prefix-caching"]
+loads:
+  - {max_concurrency: 4, num_prompts: 100}
+  - {max_concurrency: 16, num_prompts: 200}
+dataset: {name: sharegpt}

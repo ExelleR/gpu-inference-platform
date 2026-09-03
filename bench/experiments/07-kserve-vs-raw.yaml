@@ -1,0 +1,11 @@
+# Same model, same engine version: what does the KServe layer cost vs a raw Deployment?
+name: kserve-vs-raw
+kind: platform
+gpu_pool: l4-spot
+accelerator: nvidia-l4
+targets:
+  - {name: raw-v0-24, url: http://vllm-raw-v024.bench.svc:8000, model: Qwen/Qwen3-8B-FP8, served_model: qwen3-8b}
+  - {name: kserve, url: http://qwen3-8b-predictor.inference.svc:80, model: Qwen/Qwen3-8B-FP8, served_model: qwen3-8b}
+loads:
+  - {max_concurrency: 4, num_prompts: 100}
+  - {max_concurrency: 16, num_prompts: 200}

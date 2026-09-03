@@ -1,0 +1,13 @@
+# How do vLLM's continuous-batching limits (max-num-seqs, max-num-batched-tokens) trade off throughput and latency?
+name: batching
+kind: engine
+gpu_pool: l4-spot
+accelerator: nvidia-l4
+variants:
+  - name: grid
+    model: Qwen/Qwen3-8B-FP8
+    server_args: ["--max-model-len", "8192", "--gpu-memory-utilization", "0.92"]
+    server_sweep: {max-num-seqs: [32, 64, 128, 256], max-num-batched-tokens: [1024, 2048, 4096, 8192]}
+loads:
+  - {max_concurrency: 16, num_prompts: 200}
+  - {max_concurrency: 64, num_prompts: 400}
