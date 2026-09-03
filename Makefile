@@ -1,4 +1,5 @@
 SHELL := /bin/bash
+# Honoured by GNU Make >= 3.82; macOS ships 3.81, so pipeline recipes also set pipefail explicitly.
 .SHELLFLAGS := -eu -o pipefail -c
 .DEFAULT_GOAL := all
 
@@ -31,7 +32,7 @@ tools: $(TOOLS_DIR)/kubeconform
 
 $(TOOLS_DIR)/kubeconform:
 	mkdir -p "$(TOOLS_DIR)"
-	curl -fsSL https://github.com/yannh/kubeconform/releases/download/v$(KUBECONFORM_VERSION)/kubeconform-$(UNAME_S)-$(ARCH).tar.gz \
+	set -o pipefail; curl -fsSL https://github.com/yannh/kubeconform/releases/download/v$(KUBECONFORM_VERSION)/kubeconform-$(UNAME_S)-$(ARCH).tar.gz \
 	  | tar -xz -C "$(TOOLS_DIR)" kubeconform
 
 .PHONY: lint
@@ -78,11 +79,11 @@ render-check:
 .PHONY: schemas
 schemas:
 	mkdir -p "$(SCHEMAS_DIR)"
-	helm template kserve-crd oci://ghcr.io/kserve/charts/kserve-crd --version v0.20.0 --include-crds \
+	set -o pipefail; helm template kserve-crd oci://ghcr.io/kserve/charts/kserve-crd --version v0.20.0 --include-crds \
 	  | uv run --project bench python scripts/openapi2jsonschema.py "$(SCHEMAS_DIR)"
-	helm template keda keda --repo https://kedacore.github.io/charts --version 2.20.2 --include-crds \
+	set -o pipefail; helm template keda keda --repo https://kedacore.github.io/charts --version 2.20.2 --include-crds \
 	  | uv run --project bench python scripts/openapi2jsonschema.py "$(SCHEMAS_DIR)"
-	curl -fsSL https://raw.githubusercontent.com/GoogleCloudPlatform/prometheus-engine/main/manifests/setup.yaml \
+	set -o pipefail; curl -fsSL https://raw.githubusercontent.com/GoogleCloudPlatform/prometheus-engine/main/manifests/setup.yaml \
 	  | uv run --project bench python scripts/openapi2jsonschema.py "$(SCHEMAS_DIR)"
 
 .PHONY: all
@@ -112,7 +113,7 @@ down:
 
 .PHONY: argocd-ui
 argocd-ui:
-	@echo "admin password:"; kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' | base64 -d; echo
+	@echo "admin password:"; kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' | base64 -d || true; echo
 	kubectl -n argocd port-forward svc/argocd-server 8080:80
 
 .PHONY: gpu-smoke
