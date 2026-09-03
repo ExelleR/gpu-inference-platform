@@ -93,7 +93,7 @@ def _dataset_init_container(exp: Experiment) -> list[dict]:
         return []
     check = ""
     if exp.dataset.sha256:
-        check = f" && echo '{exp.dataset.sha256}  {DATASET_PATH}' | sha256sum -c -"
+        check = f" && echo {shlex.quote(f'{exp.dataset.sha256}  {DATASET_PATH}')} | sha256sum -c -"
     return [
         {
             "name": "dataset",
@@ -106,16 +106,22 @@ def _dataset_init_container(exp: Experiment) -> list[dict]:
 
 
 def _job(name: str, pod_spec: dict) -> dict:
-    labels = {"app.kubernetes.io/part-of": "gpubench"}
     return {
         "apiVersion": "batch/v1",
         "kind": "Job",
-        "metadata": {"name": name, "namespace": NAMESPACE, "labels": labels},
+        "metadata": {
+            "name": name,
+            "namespace": NAMESPACE,
+            "labels": {"app.kubernetes.io/part-of": "gpubench"},
+        },
         "spec": {
             "backoffLimit": 0,
             "ttlSecondsAfterFinished": 86400,
             "activeDeadlineSeconds": 14400,
-            "template": {"metadata": {"labels": labels}, "spec": pod_spec},
+            "template": {
+                "metadata": {"labels": {"app.kubernetes.io/part-of": "gpubench"}},
+                "spec": pod_spec,
+            },
         },
     }
 
