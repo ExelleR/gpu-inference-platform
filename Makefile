@@ -77,11 +77,11 @@ render-check:
 .PHONY: schemas
 schemas:
 	mkdir -p "$(SCHEMAS_DIR)"
-	helm show crds oci://ghcr.io/kserve/charts/kserve-crd --version v0.20.0 \
+	helm template kserve-crd oci://ghcr.io/kserve/charts/kserve-crd --version v0.20.0 --include-crds \
+	  | uv run --project bench python scripts/openapi2jsonschema.py "$(SCHEMAS_DIR)"
+	helm template keda keda --repo https://kedacore.github.io/charts --version 2.20.2 --include-crds \
 	  | uv run --project bench python scripts/openapi2jsonschema.py "$(SCHEMAS_DIR)"
 	curl -fsSL https://raw.githubusercontent.com/GoogleCloudPlatform/prometheus-engine/main/manifests/setup.yaml \
-	  | uv run --project bench python scripts/openapi2jsonschema.py "$(SCHEMAS_DIR)"
-	helm show crds keda --repo https://kedacore.github.io/charts --version 2.20.2 \
 	  | uv run --project bench python scripts/openapi2jsonschema.py "$(SCHEMAS_DIR)"
 
 .PHONY: all
