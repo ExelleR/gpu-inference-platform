@@ -6,7 +6,7 @@ No benchmark has run yet; the numbers below arrive after the first runs in Novem
 
 ## Setup
 
-Every experiment runs as a Kubernetes Job inside the same GKE Standard zonal cluster (`us-central1-a`), scheduled onto a single spot L4 node, serving `Qwen/Qwen3-8B-FP8` with vLLM `v0.28.0`; the full harness is described in `docs/methodology.md`.
+Every experiment runs as a Kubernetes Job inside the same GKE Standard zonal cluster (`us-central1-a`); the default pool is a single spot L4 serving `Qwen/Qwen3-8B-FP8` with vLLM `v0.28.0`, with per-experiment deviations covered below and the full harness described in `docs/methodology.md`.
 
 ## Baseline
 
