@@ -52,8 +52,6 @@ tf-validate:
 	  terraform -chdir=$$stage init -backend=false -input=false >/dev/null && \
 	  terraform -chdir=$$stage validate || exit 1; \
 	done
-	helm template platform-apps-local platform/argocd/apps --set repo.url=https://example.invalid/repo.git \
-	  --set serving.enabled=false --set monitoring.enabled=false > "$(BUILD_DIR)/charts/platform-apps-local.yaml"
 
 .PHONY: helm-lint
 helm-lint:
