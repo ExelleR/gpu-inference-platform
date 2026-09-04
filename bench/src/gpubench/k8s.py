@@ -1,19 +1,28 @@
-"""Thin kubectl wrapper. Every method shells out; tests mock subprocess.run."""
+"""Thin kubectl wrapper. Every method shells out; tests mock subprocess.run and time."""
 
 from __future__ import annotations
 
 import json
 import subprocess
+import time
 from pathlib import Path
 
 import yaml
 
+POLL_INTERVAL_S = 15
+
 
 class Kubectl:
     def run(self, args: list[str], input_text: str | None = None) -> str:
-        completed = subprocess.run(
-            ["kubectl", *args], input=input_text, text=True, capture_output=True, check=True
-        )
+        try:
+            completed = subprocess.run(
+                ["kubectl", *args], input=input_text, text=True, capture_output=True, check=True
+            )
+        except subprocess.CalledProcessError as exc:
+            stderr = (exc.stderr or "").strip()
+            raise RuntimeError(
+                f"kubectl {' '.join(args)} failed (exit {exc.returncode}): {stderr}"
+            ) from exc
         return completed.stdout
 
     def apply(self, manifests: list[dict]) -> str:
@@ -22,16 +31,21 @@ class Kubectl:
         )
 
     def wait_job(self, name: str, namespace: str, timeout_s: int) -> None:
-        self.run(
-            [
-                "-n",
-                namespace,
-                "wait",
-                "--for=condition=complete",
-                f"job/{name}",
-                f"--timeout={timeout_s}s",
-            ]
-        )
+        """Poll the Job until it is Complete; raise on a Failed condition or after timeout_s."""
+        deadline = time.monotonic() + timeout_s
+        while True:
+            out = self.run(["-n", namespace, "get", "job", name, "-o", "json"])
+            for cond in json.loads(out).get("status", {}).get("conditions") or []:
+                if cond.get("status") != "True":
+                    continue
+                if cond.get("type") == "Complete":
+                    return
+                if cond.get("type") == "Failed":
+                    detail = ": ".join(filter(None, [cond.get("reason"), cond.get("message")]))
+                    raise RuntimeError(f"job/{name} in {namespace} failed: {detail}")
+            if time.monotonic() >= deadline:
+                raise TimeoutError(f"job/{name} in {namespace} not complete after {timeout_s}s")
+            time.sleep(POLL_INTERVAL_S)
 
     def wait_pod_ready(self, name: str, namespace: str, timeout_s: int) -> None:
         self.run(

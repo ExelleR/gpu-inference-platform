@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections import defaultdict
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from statistics import mean
 
 import matplotlib
@@ -38,7 +38,22 @@ class Row(BaseModel):
 
 
 def _label(result: RunResult) -> str:
-    return result.metadata.get("variant") or result.metadata.get("target") or result.model_id
+    """Variant/target name, plus the server-sweep combination when the run belongs to one.
+
+    `vllm bench sweep serve` writes each run under
+    `<variant>/sweep/SERVE--<serve params>-BENCH--<bench params>/run=N.json` (no SERVE part
+    without a server sweep). The serve part becomes a label suffix so combinations report as
+    separate rows; the bench part is already the row's concurrency. Files directly under the
+    variant/target or `sweep` keep the plain label; any other parent directory is appended.
+    """
+    base = result.metadata.get("variant") or result.metadata.get("target") or result.model_id
+    parent = PurePosixPath(result.metadata.get("path", "")).parent.name
+    if not parent or parent in {base, "sweep"} or parent.startswith("BENCH-"):
+        return base
+    if parent.startswith("SERVE-"):
+        serve = parent.removeprefix("SERVE-").split("-BENCH-", 1)[0].strip("-")
+        return f"{base}/{serve}"
+    return f"{base}/{parent}"
 
 
 def build_rows(results: list[RunResult], prices: dict[str, PriceRow]) -> list[Row]:

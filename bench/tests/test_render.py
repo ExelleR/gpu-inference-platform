@@ -105,3 +105,52 @@ def test_render_and_dump(tmp_path: Path) -> None:
     out = tmp_path / "baseline-l4.yaml"
     dump_manifests(manifests, out)
     assert len(list(yaml.safe_load_all(out.read_text()))) == 3
+
+
+def test_engine_job_merges_experiment_node_selector_over_accelerator() -> None:
+    exp = Experiment.model_validate(
+        {
+            "name": "a100-vs-l4",
+            "kind": "engine",
+            "accelerator": "nvidia-tesla-a100",
+            "node_selector": {"pool": "a100-spot"},
+            "variants": [{"name": "fp8"}],
+            "loads": [{"max_concurrency": 16}],
+        }
+    )
+    _, job = engine_job(exp, exp.variants[0])
+    selector = job["spec"]["template"]["spec"]["nodeSelector"]
+    assert list(selector.items()) == [
+        ("cloud.google.com/gke-accelerator", "nvidia-tesla-a100"),
+        ("pool", "a100-spot"),
+    ]
+    override = exp.model_copy(update={"node_selector": {"cloud.google.com/gke-accelerator": "x"}})
+    _, job = engine_job(override, override.variants[0])
+    assert job["spec"]["template"]["spec"]["nodeSelector"] == {
+        "cloud.google.com/gke-accelerator": "x"
+    }
+
+
+def test_jobs_use_experiment_timeout_as_active_deadline() -> None:
+    _, default_job = engine_job(ENGINE, ENGINE.variants[0])
+    assert default_job["spec"]["activeDeadlineSeconds"] == 14400
+    engine = ENGINE.model_copy(update={"timeout_s": 28800})
+    _, job = engine_job(engine, engine.variants[0])
+    assert job["spec"]["activeDeadlineSeconds"] == 28800
+    platform = PLATFORM.model_copy(update={"timeout_s": 7200})
+    assert platform_job(platform, platform.targets[0])["spec"]["activeDeadlineSeconds"] == 7200
+
+
+def test_job_commands_start_from_a_clean_results_dir() -> None:
+    _, job = engine_job(ENGINE, ENGINE.variants[0])
+    script = job["spec"]["template"]["spec"]["containers"][0]["args"][0]
+    assert script.startswith(
+        "rm -rf /results/baseline-l4/fp8 && mkdir -p /results/baseline-l4/fp8"
+        " && vllm bench sweep serve"
+    )
+    job = platform_job(PLATFORM, PLATFORM.targets[0])
+    script = job["spec"]["template"]["spec"]["containers"][0]["args"][0]
+    assert script.startswith(
+        "rm -rf /results/kserve-vs-raw/raw && mkdir -p /results/kserve-vs-raw/raw"
+        " && vllm bench serve"
+    )

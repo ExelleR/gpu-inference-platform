@@ -143,5 +143,24 @@ def load_result(path: Path) -> RunResult:
     return parse_result(json.loads(path.read_text()))
 
 
+SKIPPED_FILES = {"manifest.json", "summary.json"}
+REQUIRED_KEYS = {"model_id", "output_throughput"}
+
+
 def load_results(root: Path) -> list[RunResult]:
-    return [load_result(p) for p in sorted(root.rglob("*.json")) if p.name != "manifest.json"]
+    """Load every benchmark result under root, recording each file's root-relative path.
+
+    Skips manifest.json, the per-combination summary.json that `vllm bench sweep serve` writes
+    (a JSON list of the runs, not a result) and any JSON without the benchmark fields.
+    """
+    results = []
+    for path in sorted(root.rglob("*.json")):
+        if path.name in SKIPPED_FILES:
+            continue
+        data = json.loads(path.read_text())
+        if not isinstance(data, dict) or not REQUIRED_KEYS <= data.keys():
+            continue
+        result = parse_result(data)
+        result.metadata["path"] = path.relative_to(root).as_posix()
+        results.append(result)
+    return results

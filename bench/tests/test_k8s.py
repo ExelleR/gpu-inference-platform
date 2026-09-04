@@ -1,4 +1,8 @@
-from unittest.mock import patch
+import json
+import subprocess
+from unittest.mock import MagicMock, call, patch
+
+import pytest
 
 from gpubench.k8s import Kubectl
 
@@ -13,20 +17,58 @@ def test_apply_streams_yaml_to_kubectl() -> None:
     assert "kind: Namespace" in kwargs["input"]
 
 
-def test_wait_job_uses_condition_complete() -> None:
+def _job_json(conditions: list[dict]) -> str:
+    return json.dumps({"status": {"conditions": conditions}})
+
+
+def test_wait_job_polls_get_job_until_complete() -> None:
+    kube = Kubectl()
+    with patch("gpubench.k8s.subprocess.run") as run, patch("gpubench.k8s.time.sleep") as sleep:
+        run.side_effect = [
+            MagicMock(stdout=json.dumps({"status": {}})),
+            MagicMock(stdout=_job_json([{"type": "Complete", "status": "True"}])),
+        ]
+        kube.wait_job("bench-x", "bench", timeout_s=30)
+    assert run.call_count == 2
+    assert run.call_args[0][0] == ["kubectl", "-n", "bench", "get", "job", "bench-x", "-o", "json"]
+    assert sleep.call_args_list == [call(15)]
+
+
+def test_wait_job_raises_with_the_failed_condition_message() -> None:
+    kube = Kubectl()
+    failed = {
+        "type": "Failed",
+        "status": "True",
+        "reason": "DeadlineExceeded",
+        "message": "Job was active longer than specified deadline",
+    }
+    with patch("gpubench.k8s.subprocess.run") as run, patch("gpubench.k8s.time.sleep") as sleep:
+        run.return_value.stdout = _job_json([failed])
+        with pytest.raises(RuntimeError, match="DeadlineExceeded.*longer than specified deadline"):
+            kube.wait_job("bench-x", "bench", timeout_s=30)
+    sleep.assert_not_called()
+
+
+def test_wait_job_times_out() -> None:
+    kube = Kubectl()
+    with patch("gpubench.k8s.subprocess.run") as run, patch("gpubench.k8s.time") as clock:
+        run.return_value.stdout = _job_json([{"type": "Complete", "status": "False"}])
+        clock.monotonic.side_effect = [0, 15, 31]
+        with pytest.raises(TimeoutError, match="bench-x"):
+            kube.wait_job("bench-x", "bench", timeout_s=30)
+    assert clock.sleep.call_args_list == [call(15)]
+
+
+def test_run_wraps_kubectl_failure_with_stderr() -> None:
     kube = Kubectl()
     with patch("gpubench.k8s.subprocess.run") as run:
-        run.return_value.stdout = ""
-        kube.wait_job("bench-x", "bench", timeout_s=30)
-    assert run.call_args[0][0] == [
-        "kubectl",
-        "-n",
-        "bench",
-        "wait",
-        "--for=condition=complete",
-        "job/bench-x",
-        "--timeout=30s",
-    ]
+        run.side_effect = subprocess.CalledProcessError(
+            1,
+            ["kubectl", "get", "job"],
+            stderr='Error from server (NotFound): jobs "x" not found\n',
+        )
+        with pytest.raises(RuntimeError, match="NotFound"):
+            kube.run(["get", "job", "x"])
 
 
 def test_job_image_ids_parses_json() -> None:

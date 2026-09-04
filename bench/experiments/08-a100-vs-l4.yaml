@@ -3,6 +3,8 @@ name: a100-vs-l4
 kind: engine
 gpu_pool: a100-40gb-spot
 accelerator: nvidia-tesla-a100
+# Pin to the un-partitioned spot A100 pool (a100-spot, opt-in in infra/terraform/gke/variables.tf).
+node_selector: {pool: a100-spot}
 variants:
   # FP8 checkpoint runs as W8A16 via Marlin on A100 (no native FP8 tensor cores on Ampere).
   - name: fp8

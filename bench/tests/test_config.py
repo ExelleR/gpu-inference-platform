@@ -95,3 +95,20 @@ def test_server_sweep_expands_to_cartesian_product() -> None:
     combos = exp.variants[0].sweep_combinations()
     assert len(combos) == 4
     assert {"max-num-seqs": 64, "max-num-batched-tokens": 4096} in combos
+
+
+def test_node_selector_and_timeout_defaults_and_bounds() -> None:
+    base = {
+        "name": "x",
+        "kind": "engine",
+        "variants": [{"name": "v"}],
+        "loads": [{"max_concurrency": 1}],
+    }
+    exp = Experiment.model_validate(base)
+    assert exp.node_selector == {} and exp.timeout_s == 14400
+    exp = Experiment.model_validate(
+        {**base, "node_selector": {"pool": "a100-spot"}, "timeout_s": 28800}
+    )
+    assert exp.node_selector == {"pool": "a100-spot"} and exp.timeout_s == 28800
+    with pytest.raises(ValidationError, match="timeout_s"):
+        Experiment.model_validate({**base, "timeout_s": 599})

@@ -105,7 +105,13 @@ def _dataset_init_container(exp: Experiment) -> list[dict]:
     ]
 
 
-def _job(name: str, pod_spec: dict) -> dict:
+def _fresh_results_dir(path: str) -> str:
+    """Shell prefix that clears a previous run's output so reruns start clean."""
+    quoted = shlex.quote(path)
+    return f"rm -rf {quoted} && mkdir -p {quoted}"
+
+
+def _job(name: str, pod_spec: dict, timeout_s: int) -> dict:
     return {
         "apiVersion": "batch/v1",
         "kind": "Job",
@@ -117,7 +123,7 @@ def _job(name: str, pod_spec: dict) -> dict:
         "spec": {
             "backoffLimit": 0,
             "ttlSecondsAfterFinished": 86400,
-            "activeDeadlineSeconds": 14400,
+            "activeDeadlineSeconds": timeout_s,
             "template": {
                 "metadata": {"labels": {"app.kubernetes.io/part-of": "gpubench"}},
                 "spec": pod_spec,
@@ -128,6 +134,7 @@ def _job(name: str, pod_spec: dict) -> dict:
 
 def engine_job(exp: Experiment, variant: Variant) -> tuple[dict, dict]:
     name = job_name(exp, variant.name)
+    results_dir = f"/results/{exp.name}/{variant.name}"
     metadata = {"experiment": exp.name, "variant": variant.name, "gpu": exp.gpu_pool}
     serve_cmd = " ".join(
         [
@@ -186,14 +193,15 @@ def engine_job(exp: Experiment, variant: Variant) -> tuple[dict, dict]:
         "--server-ready-timeout",
         "900",
         "-o",
-        f"/results/{exp.name}/{variant.name}",
+        results_dir,
         "-e",
         "sweep",
     ]
+    script = " ".join(shlex.quote(a) for a in args)
     pod_spec = {
         "restartPolicy": "Never",
         "priorityClassName": "bench-batch",
-        "nodeSelector": {"cloud.google.com/gke-accelerator": exp.accelerator},
+        "nodeSelector": {"cloud.google.com/gke-accelerator": exp.accelerator, **exp.node_selector},
         "tolerations": [GPU_TOLERATION],
         "initContainers": _dataset_init_container(exp),
         "containers": [
@@ -201,7 +209,7 @@ def engine_job(exp: Experiment, variant: Variant) -> tuple[dict, dict]:
                 "name": "sweep",
                 "image": variant.image,
                 "command": ["/bin/sh", "-c"],
-                "args": [" ".join(shlex.quote(a) for a in args)],
+                "args": [f"{_fresh_results_dir(results_dir)} && {script}"],
                 "env": [{"name": "HF_HOME", "value": "/data/hf"}],
                 "resources": GPU_RESOURCES,
                 "volumeMounts": [
@@ -219,13 +227,14 @@ def engine_job(exp: Experiment, variant: Variant) -> tuple[dict, dict]:
             {"name": "shm", "emptyDir": {"medium": "Memory", "sizeLimit": "1Gi"}},
         ],
     }
-    return configmap, _job(name, pod_spec)
+    return configmap, _job(name, pod_spec, exp.timeout_s)
 
 
 def platform_job(exp: Experiment, target: Target) -> dict:
     name = job_name(exp, target.name)
+    results_dir = f"/results/{exp.name}/{target.name}"
     metadata = {"experiment": exp.name, "target": target.name, "gpu": exp.gpu_pool}
-    commands = []
+    commands = [_fresh_results_dir(results_dir)]
     for run in range(1, exp.num_runs + 1):
         for load in exp.loads:
             args = [
@@ -251,7 +260,7 @@ def platform_job(exp: Experiment, target: Target) -> dict:
                 ),
                 *_common_bench_args(exp, metadata),
                 "--result-dir",
-                f"/results/{exp.name}/{target.name}",
+                results_dir,
                 "--result-filename",
                 f"c{load.max_concurrency}-run{run}.json",
             ]
@@ -280,7 +289,7 @@ def platform_job(exp: Experiment, target: Target) -> dict:
             {"name": "data", "emptyDir": {"sizeLimit": "10Gi"}},
         ],
     }
-    return _job(name, pod_spec)
+    return _job(name, pod_spec, exp.timeout_s)
 
 
 def job_names(exp: Experiment) -> list[str]:

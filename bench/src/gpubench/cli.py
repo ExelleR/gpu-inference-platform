@@ -42,14 +42,23 @@ def render(paths: list[Path], out: Path = typer.Option(..., "-o", "--out")) -> N
 
 
 @app.command()
-def run(path: Path, timeout_s: int = typer.Option(14400, help="Per-Job wait timeout")) -> None:
-    """Apply the experiment's PVC, ConfigMaps and Jobs, then wait for every Job to complete."""
+def run(
+    path: Path,
+    timeout_s: int | None = typer.Option(
+        None, help="Per-Job wait timeout in seconds (default: the experiment's timeout_s)"
+    ),
+) -> None:
+    """Remove a previous run's Jobs, apply the PVC, ConfigMaps and Jobs, then wait for each Job."""
     exp = load_experiment(path)
     kube = Kubectl()
+    wait_timeout = exp.timeout_s if timeout_s is None else timeout_s
+    for name in job_names(exp):
+        kube.delete("job", name, NAMESPACE)
+        kube.delete("configmap", name, NAMESPACE)
     kube.apply(render_experiment(exp))
     for name in job_names(exp):
         typer.echo(f"waiting for job/{name} in {NAMESPACE} ...")
-        kube.wait_job(name, NAMESPACE, timeout_s=timeout_s)
+        kube.wait_job(name, NAMESPACE, timeout_s=wait_timeout)
     typer.echo("all jobs complete; next: gpubench collect")
 
 

@@ -74,6 +74,10 @@ class Experiment(BaseModel):
     seed: int = 0
     percentiles: list[int] = Field(default_factory=lambda: [50, 90, 99])
     goodput: dict[str, float] = Field(default_factory=lambda: {"ttft": 500.0, "tpot": 50.0})
+    # Extra nodeSelector entries for engine Jobs; they win over the accelerator selector.
+    node_selector: dict[str, str] = Field(default_factory=dict)
+    # Job activeDeadlineSeconds and the default for `gpubench run --timeout-s`.
+    timeout_s: int = Field(default=14400, ge=600)
 
     @model_validator(mode="after")
     def _check_kind(self) -> Experiment:

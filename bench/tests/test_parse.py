@@ -43,3 +43,25 @@ def test_load_results_skips_manifest(tmp_path: Path, fixtures_dir: Path) -> None
     (raw / "c16-run1.json").write_text((fixtures_dir / "vllm-bench-serve-v0.28.0.json").read_text())
     (tmp_path / "manifest.json").write_text("{}")
     assert len(load_results(tmp_path)) == 1
+
+
+SWEEP_DIR = (
+    "grid/sweep/SERVE--max-num-seqs=64-max-num-batched-tokens=2048"
+    "-BENCH--max-concurrency=16-num-prompts=200"
+)
+
+
+def test_load_results_skips_summaries_and_non_results_and_records_path(
+    tmp_path: Path, fixtures_dir: Path
+) -> None:
+    src = (fixtures_dir / "vllm-bench-serve-v0.28.0.json").read_text()
+    comb = tmp_path / SWEEP_DIR
+    comb.mkdir(parents=True)
+    (comb / "run=0.json").write_text(src)
+    (comb / "summary.json").write_text(f"[{src}]")  # vllm's per-combination summary: a JSON list
+    (tmp_path / "manifest.json").write_text("{}")
+    (tmp_path / "grid" / "notes.json").write_text('{"note": "no benchmark fields"}')
+    results = load_results(tmp_path)
+    assert len(results) == 1
+    assert results[0].metadata["path"] == f"{SWEEP_DIR}/run=0.json"
+    assert results[0].metadata["variant"] == "fp8-defaults"

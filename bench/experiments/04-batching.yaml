@@ -11,3 +11,5 @@ variants:
 loads:
   - {max_concurrency: 16, num_prompts: 200}
   - {max_concurrency: 64, num_prompts: 400}
+# 16 server combinations x 2 loads x 3 runs, each restarting vLLM: allow eight hours.
+timeout_s: 28800
