@@ -1,0 +1,11 @@
+# Raw-Deployment target of 07-kserve-vs-raw, pinned to the vLLM version KServe 0.20 bundles.
+# helm upgrade --install vllm-raw-v024 platform/serving/vllm-chart -n bench \
+#   -f platform/serving/vllm-chart/values-raw-v024.yaml
+image:
+  tag: v0.24.0
+model:
+  name: Qwen/Qwen3-8B-FP8
+  servedName: qwen3-8b
+args:
+  - --max-model-len=8192
+  - --gpu-memory-utilization=0.92

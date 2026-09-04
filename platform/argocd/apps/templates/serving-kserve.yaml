@@ -1,3 +1,4 @@
+{{- if .Values.serving.enabled }}
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -20,3 +21,4 @@ spec:
     namespace: inference
   syncPolicy:
     {{- include "apps.syncPolicy" . | nindent 4 }}
+{{- end }}

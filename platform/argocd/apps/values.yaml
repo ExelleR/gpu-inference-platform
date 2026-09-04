@@ -6,3 +6,7 @@ versions:
   certManager: v1.21.1
   keda: 2.20.2
   kserve: v0.20.0
+# The serving tier (baseline vLLM Deployment + KServe InferenceService) keeps two L4 nodes
+# running whenever the cluster is up; it is opt-in (make up SERVING=true).
+serving:
+  enabled: false

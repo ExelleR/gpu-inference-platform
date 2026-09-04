@@ -3,3 +3,5 @@ repo:
   revision: main
   path: platform/argocd/apps
   token: ""
+serving:
+  enabled: false

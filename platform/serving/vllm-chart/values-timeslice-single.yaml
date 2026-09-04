@@ -1,0 +1,12 @@
+# "single" target of 06-timeslice: one Qwen3-1.7B replica on the l4-timeslice pool.
+# Enable the l4-timeslice pool first (infra/terraform/gke/README.md), then:
+# helm upgrade --install vllm-single platform/serving/vllm-chart -n bench \
+#   -f platform/serving/vllm-chart/values-timeslice-single.yaml
+model:
+  name: Qwen/Qwen3-1.7B
+  servedName: qwen3-1-7b
+args:
+  - --max-model-len=4096
+  - --gpu-memory-utilization=0.45
+nodeSelector:
+  pool: l4-timeslice

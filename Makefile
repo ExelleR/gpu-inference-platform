@@ -19,6 +19,10 @@ export PATH := $(CURDIR)/$(TOOLS_DIR):$(PATH)
 
 TF_STAGES := infra/terraform/bootstrap infra/terraform/gke
 CHARTS    := platform/argocd/bootstrap-chart platform/argocd/apps platform/serving/vllm-chart
+VLLM_CHART := platform/serving/vllm-chart
+# release:values-file pairs rendered from the vLLM chart; the release names match the real deployments.
+VLLM_RELEASES := vllm-baseline:values-baseline-l4 vllm-raw-v024:values-raw-v024 \
+  vllm-single:values-timeslice-single vllm-shared:values-timeslice-shared
 STATIC_MANIFEST_DIRS := platform/gpu platform/monitoring platform/serving/kserve
 KUBECONFORM_ARGS := -strict -summary -kubernetes-version $(K8S_SCHEMA_VERSION) \
   -schema-location default \
@@ -58,8 +62,13 @@ helm-lint:
 	  helm template test $$chart --set repo.url=https://example.invalid/repo.git \
 	    > "$(BUILD_DIR)/charts/$$(basename $$chart).yaml" || exit 1; \
 	done
-	helm template baseline platform/serving/vllm-chart -f platform/serving/vllm-chart/values-baseline-l4.yaml \
-	  > "$(BUILD_DIR)/charts/vllm-chart-baseline.yaml"
+	@for pair in $(VLLM_RELEASES); do \
+	  release=$${pair%%:*}; values=$(VLLM_CHART)/$${pair#*:}.yaml; \
+	  echo "== $(VLLM_CHART) $$release -f $$values"; \
+	  helm lint $(VLLM_CHART) -f $$values || exit 1; \
+	  helm template $$release $(VLLM_CHART) -f $$values \
+	    > "$(BUILD_DIR)/charts/vllm-chart-$$release.yaml" || exit 1; \
+	done
 
 .PHONY: kubeconform
 kubeconform: helm-lint
