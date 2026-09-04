@@ -10,7 +10,7 @@ Every experiment runs as a Kubernetes Job inside the same GKE Standard zonal clu
 
 ## Baseline
 
-The baseline (`bench/experiments/01-baseline-l4.yaml`) runs `Qwen3-8B-FP8` with the flags every experiment shares (`--max-model-len 8192`, `--gpu-memory-utilization 0.92`) and no other tuning, across four concurrency levels (1, 4, 16, 64), and is the reference every other experiment is measured against.
+The baseline (`bench/experiments/01-baseline-l4.yaml`) runs `Qwen3-8B-FP8` with `--max-model-len 8192` and `--gpu-memory-utilization 0.92` set explicitly (the memory setting every 8B variant shares) and no other tuning, across four concurrency levels (1, 4, 16, 64), so later experiments change one thing at a time against it.
 
 ## Experiments
 
