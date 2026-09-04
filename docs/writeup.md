@@ -10,7 +10,7 @@ Every experiment runs as a Kubernetes Job inside the same GKE Standard zonal clu
 
 ## Baseline
 
-The baseline (`bench/experiments/01-baseline-l4.yaml`) runs `Qwen3-8B-FP8` with vLLM's own defaults across four concurrency levels (1, 4, 16, 64) and is the reference every other experiment is measured against.
+The baseline (`bench/experiments/01-baseline-l4.yaml`) runs `Qwen3-8B-FP8` with the flags every experiment shares (`--max-model-len 8192`, `--gpu-memory-utilization 0.92`) and no other tuning, across four concurrency levels (1, 4, 16, 64), and is the reference every other experiment is measured against.
 
 ## Experiments
 
@@ -42,7 +42,7 @@ Each experiment changes one variable against the baseline; the file linked in ea
 
 ### A100 vs L4
 
-`bench/experiments/08-a100-vs-l4.yaml` reruns FP8 vs bf16 on a spot A100-40GB to ask whether the L4 quantization story holds on Ampere hardware, where the FP8 checkpoint runs as W8A16 via the Marlin kernel instead of native FP8 tensor cores.
+`bench/experiments/08-a100-vs-l4.yaml` reruns FP8 vs bf16 on a spot A100-40GB to ask whether the L4 quantization story holds on Ampere hardware, where the FP8 checkpoint runs as W8A16 via the Marlin kernel instead of native FP8 tensor cores (`docs/adr/0006-model-choice-qwen3.md`).
 
 ## What did not help
 
@@ -54,7 +54,7 @@ The formula, price table and utilization-adjusted views used throughout this wri
 
 ## Limitations
 
-Every result here is single-GPU and single-node, driven by a synthetic ShareGPT replay rather than production traffic, subject to spot-VM performance variance run to run, and — under GPU time-slicing — invisible to DCGM, which reports one physical GPU's utilization regardless of how many pods are sharing it.
+Every result here is single-GPU and single-node, driven by a replay of recorded ShareGPT conversations rather than production traffic, subject to spot-VM performance variance run to run, and — under GPU time-slicing — invisible to DCGM, which reports one physical GPU's utilization regardless of how many pods are sharing it.
 
 ## What's next
 
