@@ -60,6 +60,7 @@ variable "gpu_node_pools" {
     l4-spot = {
       machine_type     = "g2-standard-4"
       accelerator_type = "nvidia-l4"
+      max_nodes        = 3
     }
     l4-timeslice = {
       machine_type     = "g2-standard-4"
@@ -70,6 +71,11 @@ variable "gpu_node_pools" {
       }
       enabled = false
     }
+    a100-spot = {
+      machine_type     = "a2-highgpu-1g"
+      accelerator_type = "nvidia-tesla-a100"
+      enabled          = false
+    }
     a100-mig = {
       machine_type     = "a2-highgpu-1g"
       accelerator_type = "nvidia-tesla-a100"
@@ -77,6 +83,12 @@ variable "gpu_node_pools" {
       enabled          = false
     }
   }
+}
+
+variable "serving_enabled" {
+  description = "Deploy the serving tier (baseline vLLM Deployment and KServe InferenceService) via Argo CD. Keeps two L4 nodes running while the cluster is up."
+  type        = bool
+  default     = false
 }
 
 variable "argocd_chart_version" {

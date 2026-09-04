@@ -16,6 +16,9 @@ resource "helm_release" "argocd_bootstrap" {
   name      = "argocd-bootstrap"
   namespace = "argocd"
   chart     = "${path.module}/../../../platform/argocd/bootstrap-chart"
+  # The root Application reconciles asynchronously; do not block apply on Argo CD syncing it.
+  wait    = false
+  timeout = 900
 
   set = [
     {
@@ -29,6 +32,10 @@ resource "helm_release" "argocd_bootstrap" {
     {
       name  = "repo.path"
       value = var.argocd_apps_path
+    },
+    {
+      name  = "serving.enabled"
+      value = tostring(var.serving_enabled)
     },
   ]
 

@@ -3,6 +3,8 @@ resource "google_project" "this" {
   project_id      = var.project_id
   billing_account = var.billing_account
   deletion_policy = var.deletion_policy
+  # The gke stage creates its own VPC; skip the default network (and its permissive firewall rules).
+  auto_create_network = false
 
   labels = {
     purpose    = "gpu-inference-platform"

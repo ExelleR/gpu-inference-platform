@@ -101,6 +101,8 @@ all: lint tf-validate helm-lint kubeconform test render-check
 # ---- Cloud targets (user-run; need gcloud auth) ----
 BOOTSTRAP := infra/terraform/bootstrap
 GKE       := infra/terraform/gke
+# make up SERVING=true deploys the serving tier (baseline vLLM + KServe InferenceService).
+SERVING   ?= false
 STATE_BUCKET = $(shell terraform -chdir=$(BOOTSTRAP) output -raw state_bucket)
 PROJECT_ID   = $(shell terraform -chdir=$(BOOTSTRAP) output -raw project_id)
 
@@ -112,13 +114,13 @@ bootstrap:
 .PHONY: up
 up:
 	terraform -chdir=$(GKE) init -input=false -backend-config="bucket=$(STATE_BUCKET)"
-	terraform -chdir=$(GKE) apply -input=false -var="project_id=$(PROJECT_ID)"
+	terraform -chdir=$(GKE) apply -input=false -var="project_id=$(PROJECT_ID)" -var="serving_enabled=$(SERVING)"
 	@terraform -chdir=$(GKE) output -raw get_credentials
 	@echo
 
 .PHONY: down
 down:
-	terraform -chdir=$(GKE) destroy -input=false -var="project_id=$(PROJECT_ID)"
+	terraform -chdir=$(GKE) destroy -input=false -var="project_id=$(PROJECT_ID)" -var="serving_enabled=$(SERVING)"
 
 .PHONY: argocd-ui
 argocd-ui:
