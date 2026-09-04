@@ -55,6 +55,8 @@ make local-down
 Uninstalls the bootstrap chart (the root Application's finalizer cascades to every child
 Application and its resources), then Argo CD, then deletes the namespaces. The `docker-desktop`
 context is otherwise untouched. The target is idempotent.
+The three Argo CD CRDs (`applications`, `applicationsets`, `appprojects`) stay on the cluster
+because the chart marks them keep-on-delete; the next `make local-up` reuses them.
 
 ### Fallback: sync stuck at `Unknown`
 
