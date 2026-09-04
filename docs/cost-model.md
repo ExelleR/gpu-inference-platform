@@ -50,7 +50,7 @@ Only `l4-spot` and `a100-40gb-spot` price any current experiment (`gpu_pool` in
 Two external, previously-published reference points — not our own measurements — for judging
 whether a result is in a plausible range before trusting it:
 
-- A100-40GB: ~2,100 output tok/s for a 7-8B-parameter model at 50 concurrent requests.
+- A100-40GB: ~2,100 output tok/s for a 7–8B-parameter model at 50 concurrent requests.
 - A10-24GB running Qwen3-8B in fp16: ~850 output tok/s at 64 concurrent requests, degrading to
   87% request failures at 128 concurrent.
 
