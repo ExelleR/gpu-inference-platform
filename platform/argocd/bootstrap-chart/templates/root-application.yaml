@@ -19,6 +19,8 @@ spec:
           value: {{ .Values.repo.revision | quote }}
         - name: serving.enabled
           value: {{ .Values.serving.enabled | quote }}
+        - name: monitoring.enabled
+          value: {{ .Values.monitoring.enabled | quote }}
   destination:
     server: https://kubernetes.default.svc
     namespace: argocd

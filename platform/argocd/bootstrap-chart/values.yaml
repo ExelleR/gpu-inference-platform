@@ -5,3 +5,5 @@ repo:
   token: ""
 serving:
   enabled: false
+monitoring:
+  enabled: true

@@ -10,3 +10,7 @@ versions:
 # running whenever the cluster is up; it is opt-in (make up SERVING=true).
 serving:
   enabled: false
+
+# The Managed Prometheus scrape config uses a GKE-only CRD; local clusters turn it off.
+monitoring:
+  enabled: true
