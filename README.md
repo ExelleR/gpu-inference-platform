@@ -52,12 +52,13 @@ serving path it's pointed at, then collects and reports on whatever those Jobs w
 | `scripts/` | one-off helpers (OpenAPI → JSON Schema conversion for `make schemas`) |
 | `results/` | committed raw benchmark output and generated summaries |
 | `docs/` | writeup, methodology, cost model, ADRs |
-| `docs/runbooks/` | step-by-step guides: tools, GPU quota, bring-up, cost control |
+| `docs/runbooks/` | step-by-step guides: tools, GPU quota, bring-up, cost control, local rehearsal |
 | `docs/diagrams/` | architecture diagram source (`architecture.mmd`) |
 
 ## Quick start
 
-See `docs/runbooks/tools.md`, then `docs/runbooks/bring-up.md`.
+See `docs/runbooks/tools.md`, then `docs/runbooks/bring-up.md`. To rehearse the GitOps tier on
+Docker Desktop's Kubernetes without GPUs or cloud costs, see `docs/runbooks/local.md`.
 
 ## Reproduce
 
@@ -98,3 +99,5 @@ Each file in `bench/experiments/` starts with a `#` comment stating the question
 ## Verification
 
 `make all` runs Terraform validate, Helm lint, kubeconform, pytest and ruff offline with no cloud credentials required; `make schemas` first adds strict CRD validation (KServe, KEDA, Google managed Prometheus) to the kubeconform pass.
+`make local-up` brings the same Argo CD tier up on Docker Desktop's Kubernetes (no GPUs, serving
+tier and Managed Prometheus scrape off) so the platform manifests are validated before a GKE session.

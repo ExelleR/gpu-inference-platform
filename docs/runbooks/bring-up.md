@@ -108,6 +108,8 @@ Prints the `admin` password, then port-forwards `argocd-server` to `localhost:80
 KEDA (wave -1), then KServe resources, monitoring and GPU config (wave 0), and — only with
 `SERVING=true` — the vLLM baseline and KServe serving apps (wave 1).
 
+You can rehearse this sync locally first, without GPUs: `docs/runbooks/local.md`.
+
 ## 6. GPU smoke test
 
 ```bash
