@@ -1,12 +1,12 @@
 flowchart LR
   subgraph tf[Terraform]
-    B[bootstrap: project, APIs, tfstate, budget] --> G[gke: VPC+NAT, zonal cluster, system pool, GPU pools 0..1, Argo CD]
+    B[bootstrap: project, APIs, tfstate, budget] --> G[gke: VPC+NAT, zonal cluster, system pool, GPU pools 0..N, Argo CD]
   end
   G --> A[Argo CD app-of-apps]
   A -->|wave -2| CM[cert-manager]
   A -->|wave -1| CRD[kserve-crd] & KEDA[KEDA]
   A -->|wave 0| KS[kserve-resources Standard] & GPU[gpu-config] & MON[Managed Prometheus scrape]
-  A -->|wave 1| V[vLLM baseline Deployment] & I[KServe InferenceService]
+  A -->|wave 1, SERVING=true| V[vLLM baseline Deployment] & I[KServe InferenceService]
   H[gpubench CLI] -->|render + apply| J[Jobs in namespace bench: vllm bench sweep serve]
   J --> P[(results PVC)]
   P -->|collect| R[results/ raw JSON + manifest]

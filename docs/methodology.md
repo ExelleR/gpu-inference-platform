@@ -35,6 +35,15 @@ the pipeline end to end. `gpubench report` groups results by
 `--save-result` JSON file, not just the mean, is committed under `results/<run>/raw/`, so the
 summary can be recomputed independently.
 
+`vllm bench sweep serve` writes each engine run to
+`<variant>/sweep/SERVE--<server params>-BENCH--<load params>/run=N.json` (no `SERVE` part when the
+variant has no server sweep), plus a `summary.json` per combination — a JSON list of the same runs —
+and one `summary.csv`. `gpubench report` reads only the per-run files: `manifest.json`, every
+`summary.json` and any JSON without benchmark fields are skipped. Server-sweep combinations report
+as separate labels rather than being averaged into one row — `04-batching` yields
+`grid/max-num-seqs=64-max-num-batched-tokens=2048` and so on, one label per combination — while
+the load level is already the row's concurrency.
+
 ## Metrics and SLOs
 
 Each run requests `--percentile-metrics ttft,tpot,itl,e2el` at `--metric-percentiles 50,90,99`:
@@ -55,7 +64,10 @@ shedding requests stays visible, not hidden behind a healthy-looking throughput 
 Nothing in the measurement path crosses a `kubectl port-forward`. Engine experiments run the
 vLLM server and its benchmark client in the same pod over `127.0.0.1:8000`; platform experiments
 hit the target's in-cluster `ClusterIP` Service DNS name directly (e.g.
-`http://vllm-single.bench.svc:8000`) from a client pod on the `system` node pool. Both paths stay
+`http://vllm-single.bench.svc:8000`) from a client pod on the `system` node pool. The KServe target
+in `07-kserve-vs-raw` is `http://qwen3-8b-predictor.inference.svc:80/openai`: KServe 0.20's
+huggingface runtime serves the OpenAI-compatible routes under the `/openai` prefix, and
+`vllm bench serve` appends `/v1/completions` to whatever base URL it is given. Both paths stay
 inside the cluster network end to end, so latency numbers reflect the serving path itself.
 
 ## Server defaults

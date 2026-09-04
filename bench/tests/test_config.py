@@ -19,20 +19,6 @@ loads:
   - {max_concurrency: 16, num_prompts: 200}
 """
 
-PLATFORM = """
-name: kserve-vs-raw
-kind: platform
-gpu_pool: l4-spot
-accelerator: nvidia-l4
-targets:
-  - name: raw
-    url: http://vllm-baseline.inference.svc:8000
-    model: Qwen/Qwen3-8B-FP8
-    served_model: qwen3-8b
-loads:
-  - {max_concurrency: 4, num_prompts: 100}
-"""
-
 
 def test_engine_experiment_loads_with_defaults(tmp_path: Path) -> None:
     path = tmp_path / "e.yaml"

@@ -14,16 +14,19 @@ Console: **IAM & Admin → Quotas & System Limits**.
 
 ## 3. What to request
 
-Request all of the following in one submission:
+Request all of the following in one submission. The `l4-spot` pool scales to three nodes: two for
+the opt-in serving tier (`make up SERVING=true` — the baseline vLLM Deployment and the KServe
+predictor hold one L4 each) plus one for a benchmark Job, so all three L4-related quotas need to
+be 3.
 
 | Quota metric | Value | Scope |
 | --- | --- | --- |
-| `GPUS_ALL_REGIONS` | 1 | global |
-| `NVIDIA_L4_GPUS` | 1 | `us-central1` |
-| `PREEMPTIBLE_NVIDIA_L4_GPUS` | 1 | `us-central1` |
+| `GPUS_ALL_REGIONS` | 3 | global |
+| `NVIDIA_L4_GPUS` | 3 | `us-central1` |
+| `PREEMPTIBLE_NVIDIA_L4_GPUS` | 3 | `us-central1` |
 
-Optional — only needed if you plan to enable the `a100-mig` pool
-(see `infra/terraform/gke/README.md`):
+Optional — only needed if you plan to enable an A100 pool (`a100-spot` for `08-a100-vs-l4`, or
+`a100-mig`; see `infra/terraform/gke/README.md`):
 
 | Quota metric | Value | Scope |
 | --- | --- | --- |
@@ -37,7 +40,7 @@ Optional — only needed if you plan to enable the `a100-mig` pool
 ## 4. Justification text
 
 ```
-Single-GPU LLM inference benchmarking on GKE (spot L4), hobby project, hourly usage, budget alert configured
+LLM inference benchmarking on GKE with up to three spot L4 GPUs (two serving replicas plus one benchmark Job), hobby project, hourly usage, budget alert configured
 ```
 
 ## 5. Turnaround
@@ -58,8 +61,12 @@ Look for a `GCE_QUOTA_EXCEEDED` scale-up error in the pod's events — not a Ter
 
 ## 7. Check current quota
 
+The L4 and A100 quotas are regional; `GPUS_ALL_REGIONS` is a project-wide quota that only
+`project-info` reports:
+
 ```bash
-gcloud compute regions describe us-central1 --format="yaml(quotas)" | grep -A2 -E "L4|A100|GPUS_ALL"
+gcloud compute regions describe us-central1 --project <project_id> --format="yaml(quotas)" | grep -A2 -E "L4|A100"
+gcloud compute project-info describe --project <project_id> --format="yaml(quotas)" | grep -A2 GPUS_ALL_REGIONS
 ```
 
 ## Next

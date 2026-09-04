@@ -129,6 +129,7 @@ argocd-ui:
 
 .PHONY: gpu-smoke
 gpu-smoke:
+	kubectl delete -f platform/gpu/manual/gpu-smoke-job.yaml --ignore-not-found
 	kubectl apply -f platform/gpu/manual/gpu-smoke-job.yaml
 	kubectl -n gpu-system wait --for=condition=complete job/gpu-smoke --timeout=15m
 	kubectl -n gpu-system logs job/gpu-smoke

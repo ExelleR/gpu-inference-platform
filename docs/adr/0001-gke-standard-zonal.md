@@ -5,7 +5,7 @@ Date: 2026-09-01
 
 ## Context
 
-The platform needs one GKE cluster to host both GPU inference workloads and the benchmark harness, provisioned and torn down repeatedly across work sessions (see ADR 0002). Two cluster modes are available: Autopilot and Standard. Autopilot has grown real GPU support — it now supports GPU node pools, MIG partitioning, and Spot capacity — but it manages node pools internally and does not expose them as separate, inspectable objects. This repository's node pools (`l4-spot`, `l4-timeslice`, `a100-mig`, see `infra/terraform/gke/nodepools.tf`) need to be declared, toggled, and inspected individually. A regional vs. zonal control plane, and a release channel, also had to be picked.
+The platform needs one GKE cluster to host both GPU inference workloads and the benchmark harness, provisioned and torn down repeatedly across work sessions (see ADR 0002). Two cluster modes are available: Autopilot and Standard. Autopilot has grown real GPU support — it now supports GPU node pools, MIG partitioning, and Spot capacity — but it manages node pools internally and does not expose them as separate, inspectable objects. This repository's node pools (`l4-spot`, `l4-timeslice`, `a100-spot`, `a100-mig`, see `infra/terraform/gke/nodepools.tf`) need to be declared, toggled, and inspected individually. A regional vs. zonal control plane, and a release channel, also had to be picked.
 
 ## Decision
 

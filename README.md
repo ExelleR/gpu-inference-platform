@@ -11,6 +11,7 @@ first GPU runs are scheduled for October–November 2026. Headline numbers will 
 - Terraform for a zonal GKE Standard cluster with spot L4 / A100 node pools that scale to zero
 - Argo CD app-of-apps delivering cert-manager, KServe (Standard mode), KEDA, GPU config and monitoring
 - Two serving paths for the same model: a raw vLLM Deployment and a KServe InferenceService
+  (an opt-in serving tier: `make up SERVING=true`)
 - `gpubench`: a harness that runs vLLM's own benchmark tooling in-cluster, then computes
   cost per million tokens (peak, blended, utilization-adjusted)
 - `docs/writeup.md`: what moved the numbers, what did not, and why
@@ -20,13 +21,13 @@ first GPU runs are scheduled for October–November 2026. Headline numbers will 
 ```mermaid
 flowchart LR
   subgraph tf[Terraform]
-    B[bootstrap: project, APIs, tfstate, budget] --> G[gke: VPC+NAT, zonal cluster, system pool, GPU pools 0..1, Argo CD]
+    B[bootstrap: project, APIs, tfstate, budget] --> G[gke: VPC+NAT, zonal cluster, system pool, GPU pools 0..N, Argo CD]
   end
   G --> A[Argo CD app-of-apps]
   A -->|wave -2| CM[cert-manager]
   A -->|wave -1| CRD[kserve-crd] & KEDA[KEDA]
   A -->|wave 0| KS[kserve-resources Standard] & GPU[gpu-config] & MON[Managed Prometheus scrape]
-  A -->|wave 1| V[vLLM baseline Deployment] & I[KServe InferenceService]
+  A -->|wave 1, SERVING=true| V[vLLM baseline Deployment] & I[KServe InferenceService]
   H[gpubench CLI] -->|render + apply| J[Jobs in namespace bench: vllm bench sweep serve]
   J --> P[(results PVC)]
   P -->|collect| R[results/ raw JSON + manifest]
@@ -35,7 +36,8 @@ flowchart LR
 
 Source: `docs/diagrams/architecture.mmd`. Terraform provisions the cluster and installs Argo CD once; from
 there the app-of-apps owns everything platform-side, syncing in waves (cert-manager, then the KServe CRDs
-and KEDA, then KServe resources / GPU config / monitoring, then the two serving paths). `gpubench` is
+and KEDA, then KServe resources / GPU config / monitoring, then — only with `SERVING=true` — the two
+serving paths). `gpubench` is
 separate and downstream: it renders and applies its own Jobs into the `bench` namespace against whichever
 serving path it's pointed at, then collects and reports on whatever those Jobs wrote to the results PVC.
 
@@ -64,7 +66,7 @@ Prerequisites (GCP auth, `terraform.tfvars`, authorized networks, GPU quota) are
 
 ```bash
 make bootstrap
-make up
+make up                 # or: make up SERVING=true, to also deploy the serving tier
 uv run --project bench gpubench run bench/experiments/00-smoke.yaml
 uv run --project bench gpubench collect bench/experiments/00-smoke.yaml -o results/$(date +%F)-smoke
 uv run --project bench gpubench report results/<dir>
@@ -72,8 +74,10 @@ make down
 ```
 
 `<dir>` is whatever `collect` wrote, e.g. `2026-11-03-smoke`. Swap `00-smoke.yaml` for any other file in
-`bench/experiments/` to run a different experiment. Run `make down` at the end of every session — see
-`docs/runbooks/cost-control.md` for exactly what it does and doesn't remove.
+`bench/experiments/` to run a different experiment. The serving tier — the baseline vLLM Deployment and
+the KServe `InferenceService`, needed only by `07-kserve-vs-raw` — is opt-in: `make up SERVING=true`
+deploys it and keeps two L4 nodes running while the cluster is up. Run `make down` at the end of every
+session — see `docs/runbooks/cost-control.md` for exactly what it does and doesn't remove.
 
 ## Experiments
 

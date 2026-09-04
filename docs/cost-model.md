@@ -12,8 +12,9 @@ $/1M output tokens = $/h ÷ (output tok/s × 3600) × 1e6
 `$/h` is the whole-VM hourly price from `bench/prices.yaml` — a full `g2-standard-4` or
 `a2-highgpu-1g`, not a fractional-GPU rate — and `output tok/s` is the run's measured output
 throughput (`output_throughput` from vLLM's own benchmark JSON), meaned across a point's runs at
-a given (label, GPU, concurrency) group — label being the variant name for engine experiments or
-the target name for platform ones — per `docs/methodology.md`. A blended variant divides by
+a given (label, GPU, concurrency) group — label being the variant name for engine experiments
+(suffixed with the server-sweep combination in `04-batching`) or the target name for platform ones —
+per `docs/methodology.md`. A blended variant divides by
 total tok/s instead (`total_token_throughput`, prompt plus generated tokens together), giving
 $/1M total tokens — closer to how some hosted providers bill. `summarize_cost()` computes both
 for every row.

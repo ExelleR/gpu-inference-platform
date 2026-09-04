@@ -14,7 +14,7 @@ The baseline (`bench/experiments/01-baseline-l4.yaml`) runs `Qwen3-8B-FP8` with 
 
 ## Experiments
 
-Each experiment changes one variable against the baseline; the file linked in each subsection is the authoritative definition.
+Each engine experiment changes one variable against the baseline; the two platform experiments (06, 07) instead compare serving paths for the same model. The file linked in each subsection is the authoritative definition.
 
 ### Quantization (bf16 / FP8 / AWQ)
 
