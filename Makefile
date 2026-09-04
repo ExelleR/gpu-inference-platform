@@ -124,8 +124,8 @@ down:
 
 .PHONY: argocd-ui
 argocd-ui:
-	@echo "admin password:"; kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' | base64 -d || true; echo
-	kubectl -n argocd port-forward svc/argocd-server 8080:80
+	@echo "admin password:"; kubectl --context "$(KUBE_CONTEXT)" -n argocd get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' | base64 -d || true; echo
+	kubectl --context "$(KUBE_CONTEXT)" -n argocd port-forward svc/argocd-server 8080:80
 
 .PHONY: gpu-smoke
 gpu-smoke:
@@ -133,3 +133,44 @@ gpu-smoke:
 	kubectl apply -f platform/gpu/manual/gpu-smoke-job.yaml
 	kubectl -n gpu-system wait --for=condition=complete job/gpu-smoke --timeout=15m
 	kubectl -n gpu-system logs job/gpu-smoke
+
+# ---- Local GitOps mode (Docker Desktop Kubernetes; no GPUs, no Terraform) ----
+GIT_REPO_URL   ?= $(shell git remote get-url origin 2>/dev/null)
+GIT_REVISION   ?= $(shell git rev-parse --abbrev-ref HEAD 2>/dev/null)
+GIT_REPO_TOKEN ?=
+LOCAL_SET = --set repo.url=$(GIT_REPO_URL) --set repo.revision=$(GIT_REVISION) --set serving.enabled=false --set monitoring.enabled=false
+local-up local-wait local-status local-down: KUBE_CONTEXT ?= docker-desktop
+
+.PHONY: local-up
+local-up:
+	@kubectl --context "$(KUBE_CONTEXT)" cluster-info >/dev/null 2>&1 || { echo "kube context $(KUBE_CONTEXT) is not reachable: enable Kubernetes in Docker Desktop (Settings > Kubernetes) and retry"; exit 1; }
+	helm repo add argo https://argoproj.github.io/argo-helm --force-update
+	helm --kube-context "$(KUBE_CONTEXT)" upgrade --install argocd argo/argo-cd --version 10.6.0 \
+	  -n argocd --create-namespace -f platform/argocd/argocd-values.yaml --wait --timeout 600s
+	helm --kube-context "$(KUBE_CONTEXT)" upgrade --install argocd-bootstrap platform/argocd/bootstrap-chart \
+	  -n argocd $(LOCAL_SET) --set-string repo.token="$$GIT_REPO_TOKEN"
+	@echo "Argo CD is syncing $(GIT_REPO_URL)@$(GIT_REVISION); run: make local-wait"
+
+.PHONY: local-wait
+local-wait:
+	@set -o pipefail; want=$$(( $$(helm template t platform/argocd/apps $(LOCAL_SET) | grep -c '^kind: Application') + 1 )); \
+	end=$$((SECONDS+900)); echo "waiting for $$want Applications (15m timeout)"; \
+	while :; do \
+	  json=$$(kubectl --context "$(KUBE_CONTEXT)" -n argocd get applications.argoproj.io -o json 2>/dev/null) || json='{"items":[]}'; \
+	  have=$$(printf '%s' "$$json" | jq '.items|length'); \
+	  bad=$$(printf '%s' "$$json" | jq -r '.items[]|select(.status.sync.status!="Synced" or .status.health.status!="Healthy")|.metadata.name'); \
+	  if [ "$$have" -ge "$$want" ] && [ -z "$$bad" ]; then echo "ready: $$have/$$want Applications Synced and Healthy"; exit 0; fi; \
+	  if [ $$SECONDS -ge $$end ]; then echo "timeout; not ready: $$bad (a private repo needs GIT_REPO_TOKEN)"; exit 1; fi; \
+	  sleep 10; \
+	done
+
+.PHONY: local-status
+local-status:
+	kubectl --context "$(KUBE_CONTEXT)" -n argocd get applications.argoproj.io -o custom-columns='NAME:.metadata.name,SYNC:.status.sync.status,HEALTH:.status.health.status'
+	kubectl --context "$(KUBE_CONTEXT)" get pods -A
+
+.PHONY: local-down
+local-down:
+	helm --kube-context "$(KUBE_CONTEXT)" uninstall argocd-bootstrap -n argocd --cascade foreground --wait --timeout 600s --ignore-not-found
+	helm --kube-context "$(KUBE_CONTEXT)" uninstall argocd -n argocd --wait --timeout 300s --ignore-not-found
+	kubectl --context "$(KUBE_CONTEXT)" delete namespace argocd cert-manager keda kserve gpu-system inference bench --ignore-not-found
