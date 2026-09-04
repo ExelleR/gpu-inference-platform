@@ -7,8 +7,9 @@
 - **Cloud NAT** (`google_compute_router_nat` in `infra/terraform/gke/network.tf`) — a flat
   per-hour charge (roughly $0.044/hour, see `docs/adr/0002-ephemeral-cluster-and-budget.md`) plus
   egress, for as long as the cluster is up.
-- **GPU node(s)** — only while at least one GPU pod is scheduled. Every pool in `gpu_node_pools`
-  sets `total_min_node_count = 0`, so an idle GPU pool costs nothing.
+- **GPU node(s)** — only while at least one GPU pod is scheduled. The GPU node-pool resource in
+  `infra/terraform/gke/nodepools.tf` sets `total_min_node_count = 0` for every enabled pool, so an
+  idle GPU pool costs nothing.
 - **Managed Prometheus ingestion** — `monitoring_config.managed_prometheus.enabled = true` on the
   cluster (`infra/terraform/gke/cluster.tf`); billed on sample volume from whatever
   `ClusterPodMonitoring` targets are being scraped (DCGM GPU metrics included).

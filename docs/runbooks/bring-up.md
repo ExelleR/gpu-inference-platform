@@ -82,9 +82,9 @@ make argocd-ui
 ```
 
 Prints the `admin` password, then port-forwards `argocd-server` to `localhost:8080`. Open
-`http://localhost:8080` and watch the `platform-root` application sync through its waves
-(cert-manager and the KServe/KEDA CRDs first, then KEDA/monitoring/GPU config, then the vLLM and
-KServe serving apps last).
+`http://localhost:8080` and watch the `platform-root` application sync through its waves:
+cert-manager (wave -2), then the KServe CRDs and KEDA (wave -1), then KServe resources,
+monitoring and GPU config (wave 0), then the vLLM baseline and KServe serving apps (wave 1).
 
 ## 6. GPU smoke test
 
