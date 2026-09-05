@@ -111,21 +111,22 @@ def _fresh_results_dir(path: str) -> str:
     return f"rm -rf {quoted} && mkdir -p {quoted}"
 
 
-def _job(name: str, pod_spec: dict, timeout_s: int) -> dict:
+def _job(exp: Experiment, name: str, pod_spec: dict, timeout_s: int) -> dict:
+    labels = {"app.kubernetes.io/part-of": "gpubench", "gpubench.dev/experiment": exp.name}
     return {
         "apiVersion": "batch/v1",
         "kind": "Job",
         "metadata": {
             "name": name,
             "namespace": NAMESPACE,
-            "labels": {"app.kubernetes.io/part-of": "gpubench"},
+            "labels": dict(labels),
         },
         "spec": {
             "backoffLimit": 0,
             "ttlSecondsAfterFinished": 86400,
             "activeDeadlineSeconds": timeout_s,
             "template": {
-                "metadata": {"labels": {"app.kubernetes.io/part-of": "gpubench"}},
+                "metadata": {"labels": dict(labels)},
                 "spec": pod_spec,
             },
         },
@@ -227,7 +228,7 @@ def engine_job(exp: Experiment, variant: Variant) -> tuple[dict, dict]:
             {"name": "shm", "emptyDir": {"medium": "Memory", "sizeLimit": "1Gi"}},
         ],
     }
-    return configmap, _job(name, pod_spec, exp.timeout_s)
+    return configmap, _job(exp, name, pod_spec, exp.timeout_s)
 
 
 def platform_job(exp: Experiment, target: Target) -> dict:
@@ -289,7 +290,7 @@ def platform_job(exp: Experiment, target: Target) -> dict:
             {"name": "data", "emptyDir": {"sizeLimit": "10Gi"}},
         ],
     }
-    return _job(name, pod_spec, exp.timeout_s)
+    return _job(exp, name, pod_spec, exp.timeout_s)
 
 
 def job_names(exp: Experiment) -> list[str]:

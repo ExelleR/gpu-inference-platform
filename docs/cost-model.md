@@ -47,6 +47,16 @@ Only `l4-spot` and `a100-40gb-spot` price any current experiment (`gpu_pool` in
 `bench/experiments/*.yaml`); the on-demand rows exist for comparison. Prices drift — refresh
 `as_of` when they're next checked.
 
+## Per-experiment spend
+
+`gpubench collect` reads each Job's `startTime` and `completionTime` from the Kubernetes API and the
+number of GPUs its pod requested, and writes `jobs`, `gpu_hours` (sum of seconds × GPUs ÷ 3600)
+and `usd` (GPU-hours × the price row's `usd_per_hour`) into `manifest.json`. `gpubench report`
+prints that as a Spend line above the table. Only engine Jobs request GPUs, so the figure is the
+GPU time the harness itself consumed at the whole-VM rate; platform experiments benchmark servers
+that the serving tier pays for, and node idle time before scale-down is not counted. Jobs are
+garbage-collected 24 hours after completion, so collect before then or the spend is under-counted.
+
 ## Sanity anchors
 
 Two external, previously-published reference points — not our own measurements — for judging

@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 from gpubench.cost import load_prices
@@ -102,3 +103,28 @@ def test_write_summary_ignores_a_stray_summary_json(tmp_path: Path, fixtures_dir
     (results_dir / "raw" / "summary.json").write_text("[]")
     summary = write_summary(results_dir, PRICES)
     assert "| fp8-defaults | 16 | 2 |" in summary.read_text()
+
+
+def _manifest(price: dict, **extra: object) -> str:
+    return json.dumps({"price": price, **extra})
+
+
+def test_write_summary_includes_spend_when_manifest_has_gpu_hours(
+    tmp_path: Path, fixtures_dir: Path
+) -> None:
+    results_dir = _results_dir(tmp_path, fixtures_dir)
+    price = load_prices(PRICES)["l4-spot"].model_dump(mode="json")
+    (results_dir / "manifest.json").write_text(
+        _manifest(
+            price, jobs=[{"name": "j"}], gpu_hours=1.5, usd=0.636, spend_note="engine Jobs only"
+        )
+    )
+    text = write_summary(results_dir, PRICES).read_text()
+    assert "Spend" in text and "1.50" in text and "0.64" in text and "l4-spot" in text
+
+
+def test_write_summary_omits_spend_without_gpu_hours(tmp_path: Path, fixtures_dir: Path) -> None:
+    results_dir = _results_dir(tmp_path, fixtures_dir)
+    price = load_prices(PRICES)["l4-spot"].model_dump(mode="json")
+    (results_dir / "manifest.json").write_text(_manifest(price))
+    assert "Spend" not in write_summary(results_dir, PRICES).read_text()

@@ -115,3 +115,36 @@ def test_wait_job_gives_up_after_repeated_kubectl_failures() -> None:
         with pytest.raises(RuntimeError, match="connection refused"):
             kube.wait_job("bench-x", "bench", timeout_s=60)
     assert run.call_count == 4
+
+
+def test_job_times_parses_status_timestamps() -> None:
+    kube = Kubectl()
+    payload = json.dumps(
+        {"status": {"startTime": "2026-11-01T10:00:00Z", "completionTime": "2026-11-01T10:30:00Z"}}
+    )
+    with patch("gpubench.k8s.subprocess.run") as run:
+        run.return_value.stdout = payload
+        assert kube.job_times("bench-x", "bench") == (
+            "2026-11-01T10:00:00Z",
+            "2026-11-01T10:30:00Z",
+        )
+
+
+def test_job_gpu_request_sums_container_limits() -> None:
+    kube = Kubectl()
+    containers = [
+        {"resources": {"limits": {"nvidia.com/gpu": "1"}}},
+        {"resources": {"limits": {"nvidia.com/gpu": 1}}},
+    ]
+    payload = json.dumps({"spec": {"template": {"spec": {"containers": containers}}}})
+    with patch("gpubench.k8s.subprocess.run") as run:
+        run.return_value.stdout = payload
+        assert kube.job_gpu_request("bench-x", "bench") == 2
+
+
+def test_job_gpu_request_is_zero_without_gpu() -> None:
+    kube = Kubectl()
+    payload = json.dumps({"spec": {"template": {"spec": {"containers": [{"resources": {}}]}}}})
+    with patch("gpubench.k8s.subprocess.run") as run:
+        run.return_value.stdout = payload
+        assert kube.job_gpu_request("bench-x", "bench") == 0

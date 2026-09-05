@@ -31,13 +31,29 @@ class Kubectl:
             ["apply", "-f", "-"], input_text=yaml.safe_dump_all(manifests, sort_keys=False)
         )
 
+    def _job_json(self, name: str, namespace: str) -> dict:
+        return json.loads(self.run(["-n", namespace, "get", "job", name, "-o", "json"]))
+
+    def job_times(self, name: str, namespace: str) -> tuple[str | None, str | None]:
+        """The Job's startTime and completionTime (RFC 3339), either may be None."""
+        status = self._job_json(name, namespace).get("status", {})
+        return status.get("startTime"), status.get("completionTime")
+
+    def job_gpu_request(self, name: str, namespace: str) -> int:
+        """GPUs the Job's pod requests, summed over containers (0 for CPU-only clients)."""
+        spec = self._job_json(name, namespace)["spec"]["template"]["spec"]
+        return sum(
+            int(c.get("resources", {}).get("limits", {}).get("nvidia.com/gpu", 0))
+            for c in spec.get("containers", [])
+        )
+
     def wait_job(self, name: str, namespace: str, timeout_s: int) -> None:
         """Poll the Job until it is Complete; raise on a Failed condition or after timeout_s."""
         deadline = time.monotonic() + timeout_s
         failures = 0
         while True:
             try:
-                out = self.run(["-n", namespace, "get", "job", name, "-o", "json"])
+                data = self._job_json(name, namespace)
             except RuntimeError:
                 failures += 1
                 if failures > MAX_TRANSIENT_FAILURES:
@@ -45,7 +61,7 @@ class Kubectl:
                 time.sleep(POLL_INTERVAL_S)
                 continue
             failures = 0
-            for cond in json.loads(out).get("status", {}).get("conditions") or []:
+            for cond in data.get("status", {}).get("conditions") or []:
                 if cond.get("status") != "True":
                     continue
                 if cond.get("type") == "Complete":

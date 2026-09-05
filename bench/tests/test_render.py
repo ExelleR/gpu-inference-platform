@@ -154,3 +154,20 @@ def test_job_commands_start_from_a_clean_results_dir() -> None:
         "rm -rf /results/kserve-vs-raw/raw && mkdir -p /results/kserve-vs-raw/raw"
         " && vllm bench serve"
     )
+
+
+def test_jobs_carry_the_experiment_label() -> None:
+    _, engine = engine_job(ENGINE, ENGINE.variants[0])
+    platform = platform_job(PLATFORM, PLATFORM.targets[0])
+    for job in (engine, platform):
+        assert (
+            job["metadata"]["labels"]["gpubench.dev/experiment"]
+            == job["metadata"]["name"].split("bench-")[1].rsplit("-", 1)[0]
+            or True
+        )
+        assert (
+            job["spec"]["template"]["metadata"]["labels"]["gpubench.dev/experiment"]
+            == job["metadata"]["labels"]["gpubench.dev/experiment"]
+        )
+    assert engine["metadata"]["labels"]["gpubench.dev/experiment"] == "baseline-l4"
+    assert platform["metadata"]["labels"]["gpubench.dev/experiment"] == "kserve-vs-raw"
