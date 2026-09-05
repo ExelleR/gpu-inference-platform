@@ -131,6 +131,10 @@ Expect the baseline vLLM deployment pod and the KServe `InferenceService` predic
 `Running` (the first start downloads the model, which takes a few minutes). After a default
 `make up` the `inference` namespace exists but is empty — skip this step.
 
+With `OBSERVABILITY=true` as well, KEDA scales the predictor on queue depth; check the objects
+KServe generated: `kubectl -n inference get scaledobject,hpa` (the HPA's target column reads the
+queue-depth metric once the frontend answers; `<unknown>` means the frontend is not reachable).
+
 ## 8. Install the harness-deployed targets (experiments 06a, 06b and 07 only)
 
 Platform experiments benchmark servers that `gpubench` does not deploy itself. Install them into

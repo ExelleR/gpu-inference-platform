@@ -14,3 +14,13 @@ Run KServe in Standard mode with ingress creation disabled (`disableIngressCreat
 ## Consequences
 
 Isolating KServe's overhead from engine-version drift required a one-off vLLM pin for experiment 07 only; the baseline Deployment and every other experiment stay on `v0.28.0`. With no ingress, the `InferenceService` is unreachable from outside the cluster — fine for benchmarking, not for serving real traffic. `LLMInferenceService` (the newer `serving.kserve.io/v1alpha1` API built on llm-d) and an Envoy Gateway-based ingress are follow-up work once Standard-mode KEDA autoscaling is wired up. `platform/monitoring/clusterpodmonitoring.yaml` scrapes the predictor's metrics on port 8080, a value taken from KServe's defaults and not yet verified against a running pod; it is checked at first run.
+
+## Update 2026-09-05: KEDA wired to queue depth
+
+The `InferenceService` now carries `serving.kserve.io/autoscalerClass: keda`, `maxReplicas: 2` and an
+`autoScaling` External metric: KServe generates a KEDA `ScaledObject` that queries
+`sum(vllm:num_requests_waiting{namespace="inference"})` through the Managed Prometheus frontend
+(ADR 0008) and adds a replica when more than four requests are queued. Without
+`OBSERVABILITY=true` the metric is unavailable and KEDA holds `minReplicas`; the annotation can be
+removed on a live cluster to fall back to a fixed replica count. Experiment
+`09-kserve-autoscale` exercises it; the cost note is in `docs/runbooks/cost-control.md`.

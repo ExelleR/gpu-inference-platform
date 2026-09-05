@@ -5,10 +5,25 @@ metadata:
   namespace: inference
   annotations:
     serving.kserve.io/deploymentMode: Standard
+    # KEDA scales the predictor on vLLM queue depth through the Managed Prometheus frontend
+    # (make up OBSERVABILITY=true). Without the frontend KEDA keeps minReplicas. Escape hatch:
+    #   kubectl -n inference annotate isvc qwen3-8b serving.kserve.io/autoscalerClass-
+    serving.kserve.io/autoscalerClass: keda
 spec:
   predictor:
     minReplicas: 1
-    maxReplicas: 1
+    maxReplicas: 2
+    autoScaling:
+      metrics:
+        - type: External
+          external:
+            metric:
+              backend: prometheus
+              serverAddress: http://frontend.observability.svc:9090
+              query: sum(vllm:num_requests_waiting{namespace="inference"})
+            target:
+              type: Value
+              value: "4"
     nodeSelector:
       cloud.google.com/gke-accelerator: nvidia-l4
     tolerations:

@@ -1,0 +1,16 @@
+# Does the KServe predictor scale out on queue depth, and what does the second replica buy?
+# Prerequisites: make up SERVING=true OBSERVABILITY=true (KEDA reads vllm:num_requests_waiting
+# through the Managed Prometheus frontend). The artefact is the replica timeline, not the table:
+# watch `kubectl -n inference get hpa -w` while this runs. Scale-out needs a second L4
+# (l4-spot max_nodes 3) and KEDA's 300 s cooldown keeps it up ~5 minutes after the load stops.
+name: kserve-autoscale
+kind: platform
+gpu_pool: l4-spot
+accelerator: nvidia-l4
+targets:
+  # KServe 0.20's huggingface runtime serves the OpenAI routes under /openai.
+  - {name: kserve, url: http://qwen3-8b-predictor.inference.svc:80/openai, model: Qwen/Qwen3-8B-FP8, served_model: qwen3-8b}
+loads:
+  - {max_concurrency: 8, num_prompts: 200}
+  - {max_concurrency: 32, num_prompts: 400}
+  - {max_concurrency: 96, num_prompts: 600}

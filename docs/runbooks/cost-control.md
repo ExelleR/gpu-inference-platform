@@ -14,7 +14,9 @@
 - **Serving tier** (`make up SERVING=true`) — the baseline vLLM Deployment and the KServe
   predictor each hold one L4, so two `l4-spot` nodes (about $0.85/hour spot, 2 × $0.424) run for
   as long as the cluster is up, whether or not a benchmark is running. Only `07-kserve-vs-raw`
-  needs it; leave it off otherwise.
+  and `09-kserve-autoscale` need it; leave it off otherwise. With `OBSERVABILITY=true` KEDA can
+  add a second predictor replica (a third L4) under load and keeps it for the 300 s cooldown
+  after the load stops.
 - **Managed Prometheus ingestion** — `monitoring_config.managed_prometheus.enabled = true` on the
   cluster (`infra/terraform/gke/cluster.tf`); billed on sample volume from whatever
   `ClusterPodMonitoring` targets are being scraped (DCGM GPU metrics included).

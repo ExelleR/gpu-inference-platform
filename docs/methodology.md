@@ -91,7 +91,10 @@ KEDA are `vllm:num_requests_running`, `vllm:num_requests_waiting`, `vllm:kv_cach
 histograms `vllm:time_to_first_token_seconds` and `vllm:inter_token_latency_seconds`, and the
 counters `vllm:generation_tokens_total` and `vllm:num_preemptions_total`. Server-side numbers
 explain the client-side ones (queue depth behind a TTFT spike, KV-cache pressure behind
-preemptions); the benchmark tables themselves come only from the client.
+preemptions); the benchmark tables themselves come only from the client. `09-kserve-autoscale`
+is the one experiment whose main artefact is server-side: the predictor's replica count over time
+(`kubectl -n inference get hpa -w`) as KEDA reacts to `vllm:num_requests_waiting`, alongside the
+usual client table.
 
 ## Provenance
 

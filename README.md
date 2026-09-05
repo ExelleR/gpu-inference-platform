@@ -99,6 +99,7 @@ Each file in `bench/experiments/` starts with a `#` comment stating the question
 | 06b | `timeslice-shared` | platform | Two small replicas time-slicing the same L4: does sharing buy throughput or only latency? |
 | 07 | `kserve-vs-raw` | platform | Same model, same engine version: what does the KServe layer cost vs a raw Deployment? |
 | 08 | `a100-vs-l4` | engine | Does the L4 quantization story hold on A100: how do FP8 and bf16 compare on a spot A100? |
+| 09 | `kserve-autoscale` | platform | Does the KServe predictor scale out on queue depth, and what does the second replica buy? |
 
 ## Verification
 
