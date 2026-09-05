@@ -66,6 +66,13 @@ helm-lint:
 	  --set serving.enabled=false --set monitoring.enabled=false > "$(BUILD_DIR)/charts/platform-apps-local.yaml"
 	helm template platform-apps-serving platform/argocd/apps --set repo.url=https://example.invalid/repo.git \
 	  --set serving.enabled=true > "$(BUILD_DIR)/charts/platform-apps-serving.yaml"
+	helm template platform-apps-full platform/argocd/apps --set repo.url=https://example.invalid/repo.git \
+	  --set serving.enabled=true --set observability.enabled=true --set observability.projectId=demo-project \
+	  > "$(BUILD_DIR)/charts/platform-apps-full.yaml"
+	helm lint platform/observability --set projectId=demo-project
+	helm template observability platform/observability --set projectId=demo-project \
+	  --set frontend.gsaEmail=gmp-frontend@demo-project.iam.gserviceaccount.com \
+	  > "$(BUILD_DIR)/charts/observability.yaml"
 	@for pair in $(VLLM_RELEASES); do \
 	  release=$${pair%%:*}; values=$(VLLM_CHART)/$${pair#*:}.yaml; \
 	  echo "== $(VLLM_CHART) $$release -f $$values"; \
@@ -108,6 +115,8 @@ BOOTSTRAP := infra/terraform/bootstrap
 GKE       := infra/terraform/gke
 # make up SERVING=true deploys the serving tier (baseline vLLM + KServe InferenceService).
 SERVING   ?= false
+# make up OBSERVABILITY=true deploys the Managed Prometheus frontend and Grafana (GKE only).
+OBSERVABILITY ?= false
 STATE_BUCKET = $(shell terraform -chdir=$(BOOTSTRAP) output -raw state_bucket)
 PROJECT_ID   = $(shell terraform -chdir=$(BOOTSTRAP) output -raw project_id)
 
@@ -119,13 +128,18 @@ bootstrap:
 .PHONY: up
 up:
 	terraform -chdir=$(GKE) init -input=false -backend-config="bucket=$(STATE_BUCKET)"
-	terraform -chdir=$(GKE) apply -input=false -var="project_id=$(PROJECT_ID)" -var="serving_enabled=$(SERVING)"
+	terraform -chdir=$(GKE) apply -input=false -var="project_id=$(PROJECT_ID)" -var="serving_enabled=$(SERVING)" -var="observability_enabled=$(OBSERVABILITY)"
 	@terraform -chdir=$(GKE) output -raw get_credentials
 	@echo
 
 .PHONY: down
 down:
-	terraform -chdir=$(GKE) destroy -input=false -var="project_id=$(PROJECT_ID)" -var="serving_enabled=$(SERVING)"
+	terraform -chdir=$(GKE) destroy -input=false -var="project_id=$(PROJECT_ID)" -var="serving_enabled=$(SERVING)" -var="observability_enabled=$(OBSERVABILITY)"
+
+.PHONY: grafana-ui
+grafana-ui:
+	@echo "admin password:"; kubectl --context "$(KUBE_CONTEXT)" -n observability get secret grafana -o jsonpath='{.data.admin-password}' | base64 -d || true; echo
+	kubectl --context "$(KUBE_CONTEXT)" -n observability port-forward svc/grafana 3000:80
 
 .PHONY: argocd-ui
 argocd-ui:

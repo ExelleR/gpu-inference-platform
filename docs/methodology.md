@@ -82,6 +82,17 @@ one exception). No experiment other than `04-batching` overrides
 `max-num-batched-tokens` or `max-num-seqs`, so every other run uses vLLM's own serving defaults on
 both L4 and A100-40GB: `max_num_batched_tokens=2048`, `max_num_seqs=256`.
 
+## Server-side metrics
+
+Every vLLM server (the baseline Deployment, the KServe predictor and harness-deployed variants) is
+scraped by Managed Prometheus at `/metrics` every 15 s (`platform/monitoring`). The vLLM 0.28
+metric names used in the Grafana dashboard (`platform/observability/dashboards/vllm.json`) and by
+KEDA are `vllm:num_requests_running`, `vllm:num_requests_waiting`, `vllm:kv_cache_usage_perc`, the
+histograms `vllm:time_to_first_token_seconds` and `vllm:inter_token_latency_seconds`, and the
+counters `vllm:generation_tokens_total` and `vllm:num_preemptions_total`. Server-side numbers
+explain the client-side ones (queue depth behind a TTFT spike, KV-cache pressure behind
+preemptions); the benchmark tables themselves come only from the client.
+
 ## Provenance
 
 `gpubench collect` writes one `manifest.json` per results directory: `collected_at` (UTC

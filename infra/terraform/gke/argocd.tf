@@ -37,6 +37,22 @@ resource "helm_release" "argocd_bootstrap" {
       name  = "serving.enabled"
       value = tostring(var.serving_enabled)
     },
+    {
+      name  = "monitoring.enabled"
+      value = "true"
+    },
+    {
+      name  = "observability.enabled"
+      value = tostring(var.observability_enabled)
+    },
+    {
+      name  = "observability.projectId"
+      value = var.project_id
+    },
+    {
+      name  = "observability.gsaEmail"
+      value = try(google_service_account.gmp_frontend[0].email, "")
+    },
   ]
 
   set_sensitive = [

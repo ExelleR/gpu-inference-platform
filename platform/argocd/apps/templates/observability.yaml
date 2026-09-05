@@ -1,0 +1,29 @@
+{{- if eq (toString .Values.observability.enabled) "true" }}
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: observability
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: {{ .Values.repo.url | quote }}
+    targetRevision: {{ .Values.repo.revision | quote }}
+    path: platform/observability
+    helm:
+      releaseName: observability
+      parameters:
+        - name: projectId
+          value: {{ .Values.observability.projectId | quote }}
+        - name: frontend.gsaEmail
+          value: {{ .Values.observability.gsaEmail | quote }}
+  destination:
+    server: {{ .Values.destinationServer }}
+    namespace: observability
+  syncPolicy:
+    {{- include "apps.syncPolicy" . | nindent 4 }}
+{{- end }}

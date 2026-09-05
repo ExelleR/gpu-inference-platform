@@ -1,0 +1,5 @@
+apiVersion: v2
+name: observability
+description: Managed Prometheus query frontend and the vLLM Grafana dashboard (GKE only)
+type: application
+version: 0.1.0

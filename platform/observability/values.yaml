@@ -1,0 +1,15 @@
+# GCP project whose Managed Prometheus data the frontend queries. Required.
+projectId: ""
+frontend:
+  image: gke.gcr.io/prometheus-engine/frontend:v0.15.3-gke.0
+  serviceAccountName: gmp-frontend
+  # Google service account with roles/monitoring.viewer, bound to the KSA via Workload Identity.
+  gsaEmail: ""
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      memory: 256Mi
+dashboards:
+  enabled: true

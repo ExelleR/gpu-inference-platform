@@ -7,3 +7,7 @@ serving:
   enabled: false
 monitoring:
   enabled: true
+observability:
+  enabled: false
+  projectId: ""
+  gsaEmail: ""

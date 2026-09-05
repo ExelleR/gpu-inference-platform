@@ -54,13 +54,14 @@ serving path it's pointed at, then collects and reports on whatever those Jobs w
 | `scripts/` | one-off helpers (OpenAPI → JSON Schema conversion for `make schemas`) |
 | `results/` | committed raw benchmark output and generated summaries |
 | `docs/` | writeup, methodology, cost model, ADRs |
-| `docs/runbooks/` | step-by-step guides: tools, GPU quota, bring-up, cost control, local rehearsal |
+| `docs/runbooks/` | step-by-step guides: tools, GPU quota, bring-up, cost control, local rehearsal, observability |
 | `docs/diagrams/` | architecture diagram source (`architecture.mmd`) |
 
 ## Quick start
 
 See `docs/runbooks/tools.md`, then `docs/runbooks/bring-up.md`. To rehearse the GitOps tier on
-Docker Desktop's Kubernetes without GPUs or cloud costs, see `docs/runbooks/local.md`.
+Docker Desktop's Kubernetes without GPUs or cloud costs, see `docs/runbooks/local.md`. For the vLLM
+Grafana dashboard and KEDA autoscaling on GKE, see `docs/runbooks/observability.md`.
 
 ## Reproduce
 

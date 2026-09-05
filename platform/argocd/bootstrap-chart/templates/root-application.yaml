@@ -21,6 +21,12 @@ spec:
           value: {{ .Values.serving.enabled | quote }}
         - name: monitoring.enabled
           value: {{ .Values.monitoring.enabled | quote }}
+        - name: observability.enabled
+          value: {{ .Values.observability.enabled | quote }}
+        - name: observability.projectId
+          value: {{ .Values.observability.projectId | quote }}
+        - name: observability.gsaEmail
+          value: {{ .Values.observability.gsaEmail | quote }}
   destination:
     server: https://kubernetes.default.svc
     namespace: argocd

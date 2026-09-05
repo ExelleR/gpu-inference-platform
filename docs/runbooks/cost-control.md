@@ -18,6 +18,9 @@
 - **Managed Prometheus ingestion** — `monitoring_config.managed_prometheus.enabled = true` on the
   cluster (`infra/terraform/gke/cluster.tf`); billed on sample volume from whatever
   `ClusterPodMonitoring` targets are being scraped (DCGM GPU metrics included).
+- **Observability** (`make up OBSERVABILITY=true`) — a small frontend pod and Grafana on the
+  system pool; each Grafana refresh is a Cloud Monitoring API read, billed per query volume
+  (negligible for one dashboard, noticeable if left auto-refreshing for hours).
 
 ## What costs money while the cluster is down
 

@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  labels:
+    app.kubernetes.io/name: gmp-frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: gmp-frontend
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: gmp-frontend
+    spec:
+      serviceAccountName: {{ .Values.frontend.serviceAccountName }}
+      automountServiceAccountToken: true
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: frontend
+          image: {{ .Values.frontend.image | quote }}
+          args:
+            - --web.listen-address=:9090
+            - --query.project-id={{ required "projectId is required" .Values.projectId }}
+          ports:
+            - name: web
+              containerPort: 9090
+          readinessProbe:
+            tcpSocket:
+              port: web
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: web
+            periodSeconds: 30
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            {{- toYaml .Values.frontend.resources | nindent 12 }}

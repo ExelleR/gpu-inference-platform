@@ -117,3 +117,9 @@ variable "argocd_apps_path" {
   type    = string
   default = "platform/argocd/apps"
 }
+
+variable "observability_enabled" {
+  description = "Deploy the Managed Prometheus query frontend and Grafana (make up OBSERVABILITY=true)."
+  type        = bool
+  default     = false
+}

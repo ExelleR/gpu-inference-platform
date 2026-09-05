@@ -1,0 +1,26 @@
+# Grafana reads Managed Prometheus through the frontend Service in the same namespace.
+# No adminPassword here: the chart generates the `grafana` Secret; `make grafana-ui` prints it.
+sidecar:
+  dashboards:
+    enabled: true
+    label: grafana_dashboard
+    labelValue: "1"
+datasources:
+  datasources.yaml:
+    apiVersion: 1
+    datasources:
+      - name: Prometheus
+        type: prometheus
+        url: http://frontend.observability.svc:9090
+        access: proxy
+        isDefault: true
+service:
+  type: ClusterIP
+persistence:
+  enabled: false
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    memory: 512Mi
