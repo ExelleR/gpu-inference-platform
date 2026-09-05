@@ -131,7 +131,7 @@ Expect the baseline vLLM deployment pod and the KServe `InferenceService` predic
 `Running` (the first start downloads the model, which takes a few minutes). After a default
 `make up` the `inference` namespace exists but is empty — skip this step.
 
-## 8. Install the harness-deployed targets (experiments 06 and 07 only)
+## 8. Install the harness-deployed targets (experiments 06a, 06b and 07 only)
 
 Platform experiments benchmark servers that `gpubench` does not deploy itself. Install them into
 `bench` as releases of `platform/serving/vllm-chart` before running the experiment.
@@ -143,12 +143,19 @@ For `07-kserve-vs-raw` — the raw Deployment pinned to the vLLM `v0.24.0` that 
 helm upgrade --install vllm-raw-v024 platform/serving/vllm-chart -n bench -f platform/serving/vllm-chart/values-raw-v024.yaml
 ```
 
-For `06-timeslice`, first enable the `l4-timeslice` pool (`enabled = true` in the `gpu_node_pools`
-override, `infra/terraform/gke/README.md`) and rerun `make up`, then install the two releases:
+For the time-slicing pair, first enable the `l4-timeslice` pool (`enabled = true` in the
+`gpu_node_pools` override, `infra/terraform/gke/README.md`) and rerun `make up`. The two releases
+must run one at a time: three pods at 0.45 GPU-memory utilisation do not fit one 24 GB L4, and the
+"single" measurement is only meaningful while it has the GPU to itself. So install one, run its
+experiment, uninstall it, then the other:
 
 ```bash
 helm upgrade --install vllm-single platform/serving/vllm-chart -n bench -f platform/serving/vllm-chart/values-timeslice-single.yaml
+uv run --project bench gpubench run bench/experiments/06a-timeslice-single.yaml   # then collect + report
+helm -n bench uninstall vllm-single
 helm upgrade --install vllm-shared platform/serving/vllm-chart -n bench -f platform/serving/vllm-chart/values-timeslice-shared.yaml
+uv run --project bench gpubench run bench/experiments/06b-timeslice-shared.yaml   # then collect + report
+helm -n bench uninstall vllm-shared
 ```
 
 Wait for the pods to be `Running` and ready (`kubectl -n bench get pods`) before `gpubench run`.

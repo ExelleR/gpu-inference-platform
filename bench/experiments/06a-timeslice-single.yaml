@@ -1,0 +1,14 @@
+# One small replica alone on a time-sliced L4: the baseline that 06b's shared pair is compared to.
+# Prerequisites: enable the l4-timeslice pool (infra/terraform/gke/README.md), then install ONLY the
+# vllm-single release in namespace bench (platform/serving/vllm-chart, values-timeslice-single.yaml).
+# Uninstall it before running 06b: three pods at 0.45 GPU-memory utilisation do not fit one 24 GB L4,
+# and "single" must have the GPU to itself (docs/runbooks/bring-up.md).
+name: timeslice-single
+kind: platform
+gpu_pool: l4-spot
+accelerator: nvidia-l4
+targets:
+  - {name: single, url: http://vllm-single.bench.svc:8000, model: Qwen/Qwen3-1.7B, served_model: qwen3-1-7b}
+loads:
+  - {max_concurrency: 8, num_prompts: 200}
+  - {max_concurrency: 32, num_prompts: 400}

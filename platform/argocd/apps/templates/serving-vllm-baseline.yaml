@@ -1,4 +1,4 @@
-{{- if .Values.serving.enabled }}
+{{- if eq (toString .Values.serving.enabled) "true" }}
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:

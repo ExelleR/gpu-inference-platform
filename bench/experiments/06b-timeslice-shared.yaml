@@ -1,0 +1,13 @@
+# Two small replicas time-slicing the same L4: does sharing buy throughput or only latency vs 06a?
+# Prerequisites: the l4-timeslice pool enabled and ONLY the vllm-shared release installed in namespace
+# bench (platform/serving/vllm-chart, values-timeslice-shared.yaml); uninstall vllm-single first.
+# Compare this summary with 06a's, collected back to back on the same pool (docs/methodology.md).
+name: timeslice-shared
+kind: platform
+gpu_pool: l4-spot
+accelerator: nvidia-l4
+targets:
+  - {name: shared-x2, url: http://vllm-shared.bench.svc:8000, model: Qwen/Qwen3-1.7B, served_model: qwen3-1-7b}
+loads:
+  - {max_concurrency: 8, num_prompts: 200}
+  - {max_concurrency: 32, num_prompts: 400}

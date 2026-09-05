@@ -1,0 +1,16 @@
+# Accepted misconfiguration findings with reasons. Path-scoped so the same checks still apply
+# elsewhere. Reviewed 2026-09-05.
+misconfigurations:
+  - id: AVD-KSV-0014
+    paths:
+      - "platform/serving/vllm-chart/**"
+    statement: >-
+      vLLM writes compile and download caches under its home and /tmp; readOnlyRootFilesystem
+      cannot be validated without a GPU. Revisit after the first GKE run.
+  - id: AVD-KSV-0118
+    paths:
+      - "platform/serving/vllm-chart/**"
+    statement: >-
+      The vllm/vllm-openai image runs as root and expects a writable home; runAsNonRoot is
+      untested on a GPU node. allowPrivilegeEscalation=false and a RuntimeDefault seccomp
+      profile are set. Revisit after the first GKE run.

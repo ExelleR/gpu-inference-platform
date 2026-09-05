@@ -28,6 +28,10 @@ resource "google_container_node_pool" "system" {
       pool = "system"
     }
 
+    metadata = {
+      disable-legacy-endpoints = "true"
+    }
+
     workload_metadata_config {
       mode = "GKE_METADATA"
     }
@@ -86,6 +90,10 @@ resource "google_container_node_pool" "gpu" {
           max_shared_clients_per_gpu = gpu_sharing_config.value.clients
         }
       }
+    }
+
+    metadata = {
+      disable-legacy-endpoints = "true"
     }
 
     workload_metadata_config {

@@ -40,7 +40,7 @@ def test_run_applies_and_waits(tmp_path: Path) -> None:
         result = runner.invoke(app, ["run", str(exp), "--timeout-s", "60"])
     assert result.exit_code == 0, result.output
     kube.apply.assert_called_once()
-    kube.wait_job.assert_called_once_with("bench-smoke-v", "bench", timeout_s=60)
+    kube.wait_job.assert_called_once_with("bench-smoke-v", "bench", timeout_s=360)
 
 
 def test_validate_reports_missing_file_and_bad_yaml(tmp_path: Path) -> None:
@@ -87,4 +87,4 @@ def test_run_timeout_defaults_to_the_experiment_timeout(tmp_path: Path) -> None:
         kube = kube_cls.return_value
         result = runner.invoke(app, ["run", str(exp)])
     assert result.exit_code == 0, result.output
-    kube.wait_job.assert_called_once_with("bench-smoke-v", "bench", timeout_s=7200)
+    kube.wait_job.assert_called_once_with("bench-smoke-v", "bench", timeout_s=7500)

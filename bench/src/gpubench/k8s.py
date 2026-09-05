@@ -10,6 +10,7 @@ from pathlib import Path
 import yaml
 
 POLL_INTERVAL_S = 15
+MAX_TRANSIENT_FAILURES = 3
 
 
 class Kubectl:
@@ -33,8 +34,17 @@ class Kubectl:
     def wait_job(self, name: str, namespace: str, timeout_s: int) -> None:
         """Poll the Job until it is Complete; raise on a Failed condition or after timeout_s."""
         deadline = time.monotonic() + timeout_s
+        failures = 0
         while True:
-            out = self.run(["-n", namespace, "get", "job", name, "-o", "json"])
+            try:
+                out = self.run(["-n", namespace, "get", "job", name, "-o", "json"])
+            except RuntimeError:
+                failures += 1
+                if failures > MAX_TRANSIENT_FAILURES:
+                    raise
+                time.sleep(POLL_INTERVAL_S)
+                continue
+            failures = 0
             for cond in json.loads(out).get("status", {}).get("conditions") or []:
                 if cond.get("status") != "True":
                     continue

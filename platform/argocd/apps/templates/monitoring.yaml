@@ -1,4 +1,4 @@
-{{- if .Values.monitoring.enabled }}
+{{- if eq (toString .Values.monitoring.enabled) "true" }}
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:

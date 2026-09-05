@@ -94,3 +94,24 @@ def test_job_image_ids_skips_containers_without_image_id() -> None:
     with patch("gpubench.k8s.subprocess.run") as run:
         run.return_value.stdout = payload
         assert kube.job_image_ids("bench-x", "bench") == ["docker.io/x@sha256:abc"]
+
+
+def test_wait_job_retries_transient_kubectl_failures() -> None:
+    kube = Kubectl()
+    err = subprocess.CalledProcessError(1, "kubectl", stderr="connection refused")
+    with patch("gpubench.k8s.subprocess.run") as run, patch("gpubench.k8s.time.sleep") as sleep:
+        done = MagicMock(stdout=_job_json([{"type": "Complete", "status": "True"}]))
+        run.side_effect = [err, err, done]
+        kube.wait_job("bench-x", "bench", timeout_s=60)
+    assert run.call_count == 3
+    assert sleep.call_args_list == [call(15), call(15)]
+
+
+def test_wait_job_gives_up_after_repeated_kubectl_failures() -> None:
+    kube = Kubectl()
+    err = subprocess.CalledProcessError(1, "kubectl", stderr="connection refused")
+    with patch("gpubench.k8s.subprocess.run") as run, patch("gpubench.k8s.time.sleep"):
+        run.side_effect = [err] * 4
+        with pytest.raises(RuntimeError, match="connection refused"):
+            kube.wait_job("bench-x", "bench", timeout_s=60)
+    assert run.call_count == 4

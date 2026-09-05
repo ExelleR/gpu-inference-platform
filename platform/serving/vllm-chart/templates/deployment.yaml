@@ -25,6 +25,10 @@ spec:
         - name: vllm
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            seccompProfile:
+              type: RuntimeDefault
           command: ["vllm", "serve", {{ .Values.model.name | quote }}]
           args:
             - --host=0.0.0.0

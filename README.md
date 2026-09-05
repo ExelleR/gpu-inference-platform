@@ -1,5 +1,7 @@
 # gpu-inference-platform
 
+![ci](https://github.com/ExelleR/gpu-inference-platform/actions/workflows/ci.yaml/badge.svg)
+
 GPU inference platform on GKE with a reproducible LLM serving benchmark and cost model.
 
 **Status (2026-09):** skeleton. Infrastructure, GitOps tier and harness are in place and verified offline;
@@ -92,7 +94,8 @@ Each file in `bench/experiments/` starts with a `#` comment stating the question
 | 03 | `kv-fp8` | engine | Does an FP8 KV cache change throughput or latency versus vLLM's automatic KV cache dtype? |
 | 04 | `batching` | engine | How do vLLM's continuous-batching limits (max-num-seqs, max-num-batched-tokens) trade off throughput and latency? |
 | 05 | `prefix-cache-control` | engine | Does vLLM's automatic prefix caching improve throughput and latency versus disabling it? |
-| 06 | `timeslice` | platform | Two small replicas time-slicing one L4 vs one replica: does sharing buy throughput or only latency? |
+| 06a | `timeslice-single` | platform | One small replica alone on a time-sliced L4: the baseline for 06b. |
+| 06b | `timeslice-shared` | platform | Two small replicas time-slicing the same L4: does sharing buy throughput or only latency? |
 | 07 | `kserve-vs-raw` | platform | Same model, same engine version: what does the KServe layer cost vs a raw Deployment? |
 | 08 | `a100-vs-l4` | engine | Does the L4 quantization story hold on A100: how do FP8 and bf16 compare on a spot A100? |
 

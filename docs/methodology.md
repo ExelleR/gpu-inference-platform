@@ -33,7 +33,9 @@ ones); only the smoke test (`00-smoke.yaml`) overrides it, to `num_runs: 1`, sin
 the pipeline end to end. `gpubench report` groups results by
 (label, GPU, concurrency) and reports the mean across however many runs a point has. Every raw
 `--save-result` JSON file, not just the mean, is committed under `results/<run>/raw/`, so the
-summary can be recomputed independently.
+summary can be recomputed independently. The time-slicing comparison is deliberately two
+experiments (`06a-timeslice-single`, `06b-timeslice-shared`) with their own result directories,
+collected back to back on the same node pool, because the single replica must be measured alone.
 
 `vllm bench sweep serve` writes each engine run to
 `<variant>/sweep/SERVE--<server params>-BENCH--<load params>/run=N.json` (no `SERVE` part when the

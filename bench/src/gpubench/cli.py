@@ -15,6 +15,9 @@ from gpubench.render import NAMESPACE, dump_manifests, job_names, render_experim
 from gpubench.report import write_summary
 
 app = typer.Typer(help="Run in-cluster vLLM benchmarks and compute cost per million tokens.")
+# The Job's own activeDeadlineSeconds is the real budget; the client waits a little longer so a
+# Failed condition (DeadlineExceeded) surfaces instead of a client-side TimeoutError.
+WAIT_GRACE_S = 300
 DEFAULT_PRICES = Path(__file__).resolve().parents[2] / "prices.yaml"
 
 
@@ -58,7 +61,7 @@ def run(
     kube.apply(render_experiment(exp))
     for name in job_names(exp):
         typer.echo(f"waiting for job/{name} in {NAMESPACE} ...")
-        kube.wait_job(name, NAMESPACE, timeout_s=wait_timeout)
+        kube.wait_job(name, NAMESPACE, timeout_s=wait_timeout + WAIT_GRACE_S)
     typer.echo("all jobs complete; next: gpubench collect")
 
 

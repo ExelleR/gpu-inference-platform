@@ -64,6 +64,8 @@ helm-lint:
 	done
 	helm template platform-apps-local platform/argocd/apps --set repo.url=https://example.invalid/repo.git \
 	  --set serving.enabled=false --set monitoring.enabled=false > "$(BUILD_DIR)/charts/platform-apps-local.yaml"
+	helm template platform-apps-serving platform/argocd/apps --set repo.url=https://example.invalid/repo.git \
+	  --set serving.enabled=true > "$(BUILD_DIR)/charts/platform-apps-serving.yaml"
 	@for pair in $(VLLM_RELEASES); do \
 	  release=$${pair%%:*}; values=$(VLLM_CHART)/$${pair#*:}.yaml; \
 	  echo "== $(VLLM_CHART) $$release -f $$values"; \
@@ -74,6 +76,7 @@ helm-lint:
 
 .PHONY: kubeconform
 kubeconform: helm-lint
+	@[ -z "$$CI" ] || test -s "$(SCHEMAS_DIR)/serving.kserve.io/inferenceservice_v1beta1.json" || { echo "CRD schemas missing in CI: run make schemas first"; exit 1; }
 	kubeconform $(KUBECONFORM_ARGS) $(STATIC_MANIFEST_DIRS) "$(BUILD_DIR)/charts"
 
 .PHONY: test
